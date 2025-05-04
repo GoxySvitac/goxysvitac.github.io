@@ -1,1 +1,36 @@
-Hello World
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hello World with Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h1 id="output">Loading...</h1>
+
+  <script>
+
+    const SUPABASE_URL = https://gghzrtzmqhmctajoqnjc.supabase.co
+    const SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdnaHpydHptcWhtY3Rham9xbmpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNjg2MjksImV4cCI6MjA2MTk0NDYyOX0.iIrbNoTr9yhXaimuHt0eCed6RPUjuS24Do3DDrnunIw
+            
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function getMessage() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('text')
+        .limit(1)
+        .single();
+
+      if (error) {
+        document.getElementById('output').textContent = 'Error fetching message.';
+        console.error(error);
+      } else {
+        document.getElementById('output').textContent = data.text;
+      }
+    }
+
+    getMessage();
+  </script>
+</body>
+</html>
