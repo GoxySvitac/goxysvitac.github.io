@@ -1204,9 +1204,11 @@ var home_scenes_Intro = function(game) {
 	var modeC = new gox_y_GButton({ foreground : foreground, text : "About", textSize : game.fontSize, borderWidth : 2, borderColor : borderColor});
 	menu.addChild(modeC);
 	modeA.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.state = home_GameState.WELCOME;
 		game.engine._visit("AudioVisionR");
 	}}));
 	modeB.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.state = home_GameState.WELCOME;
 		game.engine._visit("Shizopathia");
 	}}));
 	modeC.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
@@ -1217,7 +1219,7 @@ home_scenes_Intro.__name__ = true;
 var home_scenes_Welcome = function(game) {
 	gox_y_GComponent.call(this);
 	this.game = game;
-	new gox_y_GButton({ width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME", textSize : game.fontSize}).addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+	new gox_y_GButton({ width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME to GoxyGames", textSize : game.fontSize}).addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
 		game.state = home_GameState.INTRO;
 	}}));
 };
