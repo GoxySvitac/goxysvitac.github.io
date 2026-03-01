@@ -1312,6 +1312,10 @@ var jsgox_JSEngine = function(options) {
 	this.mouseY = -666;
 	this.mouseX = -666;
 	var _gthis = this;
+	window.history.pushState({ },"",window.location.href);
+	window.document.body.onpointerdown = function(e) {
+		return;
+	};
 	this._setFPS(options.fps);
 	var _g = [];
 	var _g1 = 0;
@@ -1331,21 +1335,23 @@ jsgox_JSEngine.prototype = {
 		var _gthis = this;
 		window.addEventListener("resize",$bind(this,this.resizeCanvas));
 		window.document.onpointermove = function(e) {
+			e.preventDefault();
 			if(_gthis.mouseDown) {
 				_gthis.onMouseDragged(e);
 			} else {
 				_gthis.onMouseMoved(e);
 			}
-			e.preventDefault();
 		};
 		window.document.onpointerdown = function(e) {
-			_gthis.onMouseDown(e);
 			e.preventDefault();
+			_gthis.onMouseDown(e);
 		};
 		window.document.onpointercancel = function(e) {
+			e.preventDefault();
 			_gthis.onMouseUp(e);
 		};
 		window.document.onpointerup = function(e) {
+			e.preventDefault();
 			_gthis.onMouseUp(e);
 		};
 		window.document.onkeydown = function(e) {
@@ -1456,8 +1462,7 @@ jsgox_JSEngine.prototype = {
 		return this.fps;
 	}
 	,_visit: function(title) {
-		window.history.pushState({ },"",window.location.href);
-		window.location.assign(title + ".html");
+		window.open(title + ".html","_self");
 	}
 	,_loop: function(callback) {
 		var _gthis = this;
