@@ -1112,7 +1112,6 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 		while(_g < _g1) this.colors[_g++] = new gox_Color(0,0,0);
 	}
 	,logic: function(dt) {
-		console.log("src/home/Home.hx:76:",this.state);
 		switch(this.state._hx_index) {
 		case 0:
 			break;
