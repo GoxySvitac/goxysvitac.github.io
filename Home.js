@@ -1211,6 +1211,7 @@ var home_scenes_Intro = function(game) {
 	screen.addChild(welcome);
 	welcome.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
 		HxOverrides.remove(screen.children,welcome);
+		welcome.mouseListeners = [];
 	}}));
 };
 home_scenes_Intro.__name__ = true;
