@@ -1456,7 +1456,7 @@ jsgox_JSEngine.prototype = {
 		return this.fps;
 	}
 	,_visit: function(title) {
-		window.location.href = title + ".html";
+		window.location.assign(title + ".html");
 	}
 	,_loop: function(callback) {
 		var _gthis = this;
