@@ -1081,6 +1081,7 @@ var home_Home = function() {
 	this.engine._loop($bind(this,this.logic));
 	this.engine._addMouseListener(this);
 	this.engine._addKeyboardListener(this);
+	this.addShowListener();
 };
 home_Home.__name__ = true;
 home_Home.main = function() {
@@ -1097,6 +1098,15 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 	}
 	,setQ: function(q) {
 		this.q = q;
+	}
+	,addShowListener: function() {
+		var _gthis = this;
+		this.addEventListener(new gox_y_GEventAdapter({ onEvent : function(e) {
+			gox_y_GComponent.destroyComponents();
+			_gthis.state = home_GameState.WELCOME;
+		}, listeningTo : function() {
+			return [gox_Events.GAME_SHOWN];
+		}}));
 	}
 	,createColors: function() {
 		this.colors = new Array(this.PLAYER + 1);
@@ -1204,11 +1214,9 @@ var home_scenes_Intro = function(game) {
 	var modeC = new gox_y_GButton({ foreground : foreground, text : "About", textSize : game.fontSize, borderWidth : 2, borderColor : borderColor});
 	menu.addChild(modeC);
 	modeA.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-		game.state = home_GameState.WELCOME;
 		game.engine._visit("AudioVisionR");
 	}}));
 	modeB.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-		game.state = home_GameState.WELCOME;
 		game.engine._visit("Shizopathia");
 	}}));
 	modeC.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
@@ -1381,6 +1389,9 @@ jsgox_JSEngine.prototype = {
 		window.document.onkeyup = function(e) {
 			return _gthis.keyStates[e.keyCode] = false;
 		};
+		window.addEventListener("pageshow",function(e) {
+			gox_Game.instance.fireEvent(new gox_y_GEvent(gox_Events.GAME_SHOWN));
+		});
 	}
 	,onMouseDown: function(e) {
 		this.setMouseCoordinates(e);
@@ -1697,6 +1708,7 @@ gox_Color.MAGENTA = new gox_Color(255,0,255);
 gox_Events.RANDOMIZE_COLORS = "RANDOMIZE_COLORS";
 gox_Events.LEVEL_CHANGED = "LEVEL_CHANGED";
 gox_Events.PLAYER_INTERACTED = "PLAYER_INTERACTED";
+gox_Events.GAME_SHOWN = "GAME_SHOWN";
 gox_y_GComponent.components = [];
 gox_Game.VK_ESCAPE = 27;
 gox_Game.VK_F1 = 112;
