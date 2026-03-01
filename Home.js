@@ -1063,7 +1063,6 @@ var home_GameState = $hxEnums["home.GameState"] = { __ename__:true,__constructs_
 };
 home_GameState.__constructs__ = [home_GameState.NOP,home_GameState.INTRO,home_GameState.ABOUT,home_GameState.WELCOME];
 var home_Home = function() {
-	this.wait = -1;
 	this.state = home_GameState.WELCOME;
 	this.crazy = 11;
 	this.PLAYER = 3;
@@ -1081,7 +1080,6 @@ var home_Home = function() {
 	this.engine._loop($bind(this,this.logic));
 	this.engine._addMouseListener(this);
 	this.engine._addKeyboardListener(this);
-	this.addShowListener();
 };
 home_Home.__name__ = true;
 home_Home.main = function() {
@@ -1102,7 +1100,6 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 	,addShowListener: function() {
 		var _gthis = this;
 		this.addEventListener(new gox_y_GEventAdapter({ onEvent : function(e) {
-			gox_y_GComponent.destroyComponents();
 			_gthis.state = home_GameState.WELCOME;
 		}, listeningTo : function() {
 			return [gox_Events.GAME_SHOWN];
@@ -1115,20 +1112,22 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 		while(_g < _g1) this.colors[_g++] = new gox_Color(0,0,0);
 	}
 	,logic: function(dt) {
+		console.log("src/home/Home.hx:76:",this.state);
 		switch(this.state._hx_index) {
 		case 0:
 			break;
 		case 1:
-			this.randomizeColors();
 			this.vStateChanged();
 			new home_scenes_Intro(this);
 			this.state = home_GameState.NOP;
 			break;
 		case 2:
+			this.vStateChanged();
 			new home_scenes_Help(this,this.SICK,this.HEALTHY);
 			this.state = home_GameState.NOP;
 			break;
 		case 3:
+			this.vStateChanged();
 			new home_scenes_Welcome(this);
 			this.state = home_GameState.NOP;
 			break;
@@ -1138,10 +1137,9 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 		gox_y_GComponent.paintComponents(this.engine);
 	}
 	,vStateChanged: function() {
-		if(this.engine.player != null) {
-			this.engine.player._pause();
-		}
 		gox_y_GComponent.destroyComponents();
+		this.addShowListener();
+		this.randomizeColors();
 		new gox_TopMessage(this,{ colors : this.colors, SICK : this.SICK, HEALTHY : this.HEALTHY});
 	}
 	,onKeyTyped: function(key) {
@@ -1227,7 +1225,7 @@ home_scenes_Intro.__name__ = true;
 var home_scenes_Welcome = function(game) {
 	gox_y_GComponent.call(this);
 	this.game = game;
-	new gox_y_GButton({ width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME to GoxyGames", textSize : game.fontSize}).addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+	new gox_y_GButton({ y : game.topMessengerSize, width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME to GoxyGames", textSize : game.fontSize}).addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
 		game.state = home_GameState.INTRO;
 	}}));
 };
