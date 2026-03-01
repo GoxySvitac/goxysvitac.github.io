@@ -1059,11 +1059,12 @@ var home_GameState = $hxEnums["home.GameState"] = { __ename__:true,__constructs_
 	,NOP: {_hx_name:"NOP",_hx_index:0,__enum__:"home.GameState",toString:$estr}
 	,INTRO: {_hx_name:"INTRO",_hx_index:1,__enum__:"home.GameState",toString:$estr}
 	,ABOUT: {_hx_name:"ABOUT",_hx_index:2,__enum__:"home.GameState",toString:$estr}
+	,WELCOME: {_hx_name:"WELCOME",_hx_index:3,__enum__:"home.GameState",toString:$estr}
 };
-home_GameState.__constructs__ = [home_GameState.NOP,home_GameState.INTRO,home_GameState.ABOUT];
+home_GameState.__constructs__ = [home_GameState.NOP,home_GameState.INTRO,home_GameState.ABOUT,home_GameState.WELCOME];
 var home_Home = function() {
 	this.wait = -1;
-	this.state = home_GameState.INTRO;
+	this.state = home_GameState.WELCOME;
 	this.crazy = 11;
 	this.PLAYER = 3;
 	this.HEALTHY = 2;
@@ -1115,6 +1116,10 @@ home_Home.prototype = $extend(gox_Game.prototype,{
 			break;
 		case 2:
 			new home_scenes_Help(this,this.SICK,this.HEALTHY);
+			this.state = home_GameState.NOP;
+			break;
+		case 3:
+			new home_scenes_Welcome(this);
 			this.state = home_GameState.NOP;
 			break;
 		}
@@ -1207,14 +1212,19 @@ var home_scenes_Intro = function(game) {
 	modeC.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
 		game.state = home_GameState.ABOUT;
 	}}));
-	var welcome = new gox_y_GButton({ width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME", textSize : game.fontSize});
-	screen.addChild(welcome);
-	welcome.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-		HxOverrides.remove(screen.children,welcome);
-		welcome.mouseListeners = [];
-	}}));
 };
 home_scenes_Intro.__name__ = true;
+var home_scenes_Welcome = function(game) {
+	gox_y_GComponent.call(this);
+	this.game = game;
+	new gox_y_GButton({ width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLACK, foreground : gox_Color.WHITE, text : "WEL(L)COME", textSize : game.fontSize}).addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.state = home_GameState.INTRO;
+	}}));
+};
+home_scenes_Welcome.__name__ = true;
+home_scenes_Welcome.__super__ = gox_y_GComponent;
+home_scenes_Welcome.prototype = $extend(gox_y_GComponent.prototype,{
+});
 var js_Boot = function() { };
 js_Boot.__name__ = true;
 js_Boot.__string_rec = function(o,s) {
