@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>AudioVisionR</title>
+        <title>GoxyCam</title>
     </head>
 
     <body>
@@ -116,15 +116,6 @@ Std.random = function(x) {
 };
 var StringTools = function() { };
 StringTools.__name__ = true;
-StringTools.rpad = function(s,c,l) {
-	if(c.length <= 0) {
-		return s;
-	}
-	var buf_b = "";
-	buf_b += s == null ? "null" : "" + s;
-	while(buf_b.length < l) buf_b += c == null ? "null" : "" + c;
-	return buf_b;
-};
 StringTools.replace = function(s,sub,by) {
 	return s.split(sub).join(by);
 };
@@ -140,6 +131,178 @@ StringTools.hex = function(n,digits) {
 	}
 	return s;
 };
+var firebase_FirebaseJS = function() { };
+firebase_FirebaseJS.__name__ = true;
+firebase_FirebaseJS.initializeApp = function(config) {
+	return firebaseApp.initializeApp(config);
+};
+firebase_FirebaseJS.getDatabase = function(app) {
+	return firebaseDatabase.getDatabase(app);
+};
+firebase_FirebaseJS.ref = function(db,path) {
+	return firebaseDatabase.ref(db, path);
+};
+firebase_FirebaseJS.push = function(ref) {
+	return firebaseDatabase.push(ref);
+};
+firebase_FirebaseJS.getKey = function(ref) {
+	return ref.key;
+};
+firebase_FirebaseJS.set = function(ref,data) {
+	return firebaseDatabase.set(ref, data);
+};
+firebase_FirebaseJS.get = function(ref) {
+	return firebaseDatabase.get(ref);
+};
+firebase_FirebaseJS.query = function(ref,constraints) {
+	return firebaseDatabase.query(ref, ...constraints);
+};
+firebase_FirebaseJS.orderByChild = function(path) {
+	return firebaseDatabase.orderByChild(path);
+};
+firebase_FirebaseJS.limitToFirst = function(count) {
+	return firebaseDatabase.limitToFirst(count);
+};
+firebase_FirebaseJS.update = function(ref,data) {
+	return firebaseDatabase.update(ref, data);
+};
+var gox_Color = function(r,g,b,a) {
+	this.r = r;
+	this.g = g;
+	this.b = b;
+	var tmp = a;
+	this.a = tmp != null ? tmp : 255;
+};
+gox_Color.__name__ = true;
+gox_Color.prototype = {
+	duplicate: function() {
+		return new gox_Color(this.r,this.g,this.b,this.a);
+	}
+	,set: function(c) {
+		this.r = c.r;
+		this.g = c.g;
+		this.b = c.b;
+		this.a = c.a;
+		return this;
+	}
+	,alpha: function(a) {
+		this.a = Math.round(Math.max(0,Math.min(a,255)));
+		return this;
+	}
+	,multiply: function(k) {
+		this.r = Math.round(this.r * k);
+		this.g = Math.round(this.g * k);
+		this.b = Math.round(this.b * k);
+		return this;
+	}
+	,clamp: function() {
+		this.r = Math.max(0,Math.min(this.r,255)) | 0;
+		this.g = Math.max(0,Math.min(this.g,255)) | 0;
+		this.b = Math.max(0,Math.min(this.b,255)) | 0;
+		return this;
+	}
+	,toHSB: function() {
+		this.clamp();
+		var rf = this.r / 255;
+		var gf = this.g / 255;
+		var bf = this.b / 255;
+		var max = Math.max(rf,Math.max(gf,bf));
+		var min = Math.min(rf,Math.min(gf,bf));
+		var delta = max - min;
+		var v = max;
+		var s = max == 0 ? 0 : delta / max;
+		var h = 0;
+		if(delta != 0) {
+			if(max == rf) {
+				h = (gf - bf) / delta + (gf < bf ? 6 : 0);
+			} else if(max == gf) {
+				h = (bf - rf) / delta + 2;
+			} else {
+				h = (rf - gf) / delta + 4;
+			}
+			h /= 6;
+		}
+		return new gox_HSB(h,s,v);
+	}
+	,mix: function(c,k) {
+		if(k == null) {
+			k = 0.5;
+		}
+		k = Math.max(0,Math.min(k,1));
+		this.r = Math.round(this.r + k * (c.r - this.r));
+		this.g = Math.round(this.g + k * (c.g - this.g));
+		this.b = Math.round(this.b + k * (c.b - this.b));
+		return this;
+	}
+	,toGray: function() {
+		var gray = 0.299 * this.r + 0.587 * this.g + 0.114 * this.b | 0;
+		this.r = gray;
+		this.g = gray;
+		this.b = gray;
+		return this;
+	}
+	,oposite: function(options) {
+		var hsb = this.toHSB();
+		var gray = this.duplicate().toGray();
+		hsb.h += 0.5;
+		var tmp = options != null ? options.s : null;
+		hsb.s *= tmp != null ? tmp : 0.5;
+		if(gray.r < 96) {
+			var tmp = options != null ? options.b : null;
+			hsb.b = tmp != null ? tmp : 1;
+		} else {
+			var tmp = options != null ? options.b : null;
+			hsb.b = 1 - (tmp != null ? tmp : 1);
+		}
+		return hsb.toRGB();
+	}
+	,invert: function() {
+		this.r = 255 - this.r;
+		this.g = 255 - this.g;
+		this.b = 255 - this.b;
+		return this;
+	}
+	,mutate: function(m,p) {
+		this.r = this.r + 255 * new gox_FloatRange(m,p).getRandom() | 0;
+		this.g = this.g + 255 * new gox_FloatRange(m,p).getRandom() | 0;
+		this.b = this.b + 255 * new gox_FloatRange(m,p).getRandom() | 0;
+		return this.clamp();
+	}
+};
+var gox_Events = function() { };
+gox_Events.__name__ = true;
+var gox_FloatRange = function(min,max) {
+	this.min = min;
+	this.max = max;
+};
+gox_FloatRange.__name__ = true;
+gox_FloatRange.prototype = {
+	getRandom: function() {
+		return this.min + gox_Utilities.random() * (this.max - this.min);
+	}
+};
+var gox_Recorded = function() { };
+gox_Recorded.__name__ = true;
+var gox_CoordinatesOffset = function(dx,dy) {
+	this.dx = dx;
+	this.dy = dy;
+};
+gox_CoordinatesOffset.__name__ = true;
+gox_CoordinatesOffset.__super__ = gox_Recorded;
+gox_CoordinatesOffset.prototype = $extend(gox_Recorded.prototype,{
+});
+var gox_MouseSwitch = function() {
+};
+gox_MouseSwitch.__name__ = true;
+gox_MouseSwitch.__super__ = gox_Recorded;
+gox_MouseSwitch.prototype = $extend(gox_Recorded.prototype,{
+});
+var gox_PlaybackMode = $hxEnums["gox.PlaybackMode"] = { __ename__:true,__constructs__:null
+	,RECORD: {_hx_name:"RECORD",_hx_index:0,__enum__:"gox.PlaybackMode",toString:$estr}
+	,PLAYBACK: {_hx_name:"PLAYBACK",_hx_index:1,__enum__:"gox.PlaybackMode",toString:$estr}
+	,IGNORE: {_hx_name:"IGNORE",_hx_index:2,__enum__:"gox.PlaybackMode",toString:$estr}
+};
+gox_PlaybackMode.__constructs__ = [gox_PlaybackMode.RECORD,gox_PlaybackMode.PLAYBACK,gox_PlaybackMode.IGNORE];
 var gox_y_GComponent = function() {
 	this.eventListeners = [];
 	this.mouseListeners = [];
@@ -418,7 +581,8 @@ gox_y_GComponent.prototype = {
 var gox_Game = function() {
 	this.startMousePosY = 0;
 	this.startMousePosX = 0;
-	this.lastMousePresses = 0;
+	this.startMouseSwitches = 0;
+	this.mouseSwitches = 0;
 	this.commaChar = "*";
 	this.falseChar = "?";
 	this.trueChar = "!";
@@ -430,6 +594,7 @@ var gox_Game = function() {
 	this.options = { };
 	this._alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	this.playbackMode = gox_PlaybackMode.IGNORE;
+	this.levelScore = 0.0;
 	this.totalScore = 0.0;
 	this.defaultFontSize = 25;
 	this.fontSize = 25;
@@ -497,7 +662,8 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 		this.lastMouseX = this.engine._getMouseX();
 		this.lastMouseY = this.engine._getMouseY();
 		this.recordingPointer = 0;
-		this.lastMousePresses = this.engine._getMousePresses();
+		this.startMouseSwitches = this.engine._getMouseSwitches();
+		this.mouseSwitches = this.startMouseSwitches;
 		this.mousePressed = false;
 		this.engine._flushInput();
 	}
@@ -576,6 +742,7 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 		this.options.title = this.title;
 		this.options.fps = this.engine._getFPS();
 		this.options.seed = this.seed;
+		this.options.startMouseSwitches = this.startMouseSwitches;
 		var data = "";
 		data += this.convert(this.startMousePosX) + "," + this.convert(this.startMousePosY) + ",";
 		var _g = 0;
@@ -605,6 +772,7 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 		this.options = JSON.parse(window.localStorage.getItem("recording"));
 		gox_Utilities.seed = this.options.seed;
 		this.seed = gox_Utilities.seed;
+		this.mouseSwitches = this.options.startMouseSwitches;
 		var ints = this.decompressCommas(StringTools.replace(this.options.data,this.commaChar,",")).split(",");
 		var p = 0;
 		this.engine._setMouseX(this.deconvert(ints[p++]));
@@ -642,10 +810,6 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 			return -(z + 1 >> 1);
 		}
 	}
-	,ignoreRecording: function() {
-		this.playbackMode = gox_PlaybackMode.IGNORE;
-		this.engine._ignore(false);
-	}
 	,endecode: function() {
 		if(this.playbackMode == gox_PlaybackMode.PLAYBACK) {
 			this.decode();
@@ -653,12 +817,15 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 			this.encode();
 		}
 	}
+	,ignoreRecording: function() {
+	}
 	,encode: function() {
-		while(this.engine._getMousePresses() > this.lastMousePresses) {
-			this.lastMousePresses++;
+		while(this.mouseSwitches < this.engine._getMouseSwitches()) {
+			this.mouseSwitches++;
 			this.recording.push(new gox_MouseSwitch());
 		}
 		this.setMouseOffset(this.engine._getMouseX(),this.engine._getMouseY());
+		console.log("src/gox/Game.hx:320:","" + this.recording.length + " " + this.engine._getMouseX() + " " + this.engine._getMouseY() + " " + Std.string(this.engine._isMouseDown()));
 	}
 	,decode: function() {
 		while(((this.recording[this.recordingPointer]) instanceof gox_MouseSwitch)) {
@@ -672,7 +839,7 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 		}
 		var z2 = this.recording[this.recordingPointer];
 		if(z2 == null) {
-			this.playbackMode = gox_PlaybackMode.STOPPED;
+			this.playbackMode = gox_PlaybackMode.IGNORE;
 			return;
 		}
 		this.lastMouseX += z2.dx;
@@ -683,6 +850,7 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 			this.engine._simulateMouseDragged();
 		}
 		this.recordingPointer++;
+		console.log("src/gox/Game.hx:346:","" + this.recordingPointer + " " + this.engine._getMouseX() + " " + this.engine._getMouseY() + " " + Std.string(this.engine._isMouseDown()));
 	}
 	,setMouseOffset: function(x,y) {
 		var dx = x - this.lastMouseX;
@@ -732,1712 +900,6 @@ gox_Game.prototype = $extend(gox_y_GComponent.prototype,{
 		}
 	}
 });
-var avis_AudioVisionR = function() {
-	this.special = false;
-	this.ghosts = [];
-	this.lastTime = 0.0;
-	this.wordsPerLevel = 10;
-	this.maxWordLength = 1;
-	this.playingLetterS = 0;
-	this.playingLetterW = 0;
-	this.played = false;
-	this.playS = 0;
-	this.playW = 0;
-	this.lastDirections = [];
-	this.directions = [];
-	this.words = [];
-	this.triesLeft = 0;
-	this.solvedWords = 0;
-	this.solvedLetters = 0;
-	this.crazyness = 11;
-	this.level = 1;
-	this.input = "";
-	this.direction = avis_Direction.UP;
-	this.maxPlayTime = 5;
-	this.playLengths = [];
-	this.startTime = 0.0;
-	this.state = avis_GameState.INTRO;
-	this.HEALTHY = 2;
-	this.SICK = 1;
-	this.BLACK = 0;
-	this.range = 1;
-	this.pushStates = [];
-	gox_Game.call(this);
-	this.writeOptions();
-	this.setTitle("AudioVisionR");
-	this.setResolution(960,540);
-	this.engine._initBuffers(2);
-	this.setQ(2);
-	this.createColors();
-	this.randomizeColors();
-	this.engine._loop($bind(this,this.logic));
-	this.engine._addMouseListener(this);
-	this.engine._addKeyboardListener(this);
-};
-avis_AudioVisionR.__name__ = true;
-avis_AudioVisionR.main = function() {
-	new avis_AudioVisionR();
-};
-avis_AudioVisionR.__super__ = gox_Game;
-avis_AudioVisionR.prototype = $extend(gox_Game.prototype,{
-	setResolution: function(W,H) {
-		this.fullResolutionW = W;
-		this.fullResolutionH = H;
-		this.resolutionW = W;
-		this.resolutionH = H - this.topMessengerSize - this.bottomMessengerSize;
-		this.w30 = (this.resolutionH - this.topMessengerSize) / avis_AudioVisionR.AZBUKA_BIG.length;
-		this.w26 = (this.resolutionH - this.topMessengerSize) / avis_AudioVisionR.ENGLISH_BIG.length;
-		this.engine._setResolution(W,H);
-	}
-	,setQ: function(q) {
-		this.q = q;
-		this.worldWidth = Math.round(this.resolutionW / q);
-		this.worldHeight = Math.round(this.resolutionH / q);
-		this.world = new avis_World(this);
-		this.sound = new avis_World(this);
-	}
-	,createColors: function() {
-		this.colors = new Array(this.HEALTHY + 1);
-		var _g = 0;
-		var _g1 = this.colors.length;
-		while(_g < _g1) {
-			var i = _g++;
-			this.colors[i] = new gox_Color(0,0,0);
-		}
-	}
-	,readOptions: function() {
-		this.level = this.options.level;
-		this.maxWordLength = this.options.maxWordLength;
-		this.wordsPerLevel = this.options.wordsPerLevel;
-		this.maxPlayTime = this.options.maxPlayTime;
-	}
-	,writeOptions: function() {
-		this.options = { level : this.level, maxWordLength : this.maxWordLength, wordsPerLevel : this.wordsPerLevel, maxPlayTime : this.maxPlayTime};
-	}
-	,logic: function(dt) {
-		this.dt = gox_Utilities.roundFloat(this.dt + dt);
-		this.lastTime = this.dt;
-		this.listenPushes();
-		this.endecode();
-		if(this.playbackMode == gox_PlaybackMode.STOPPED) {
-			this.state = avis_GameState.GAME_OVER;
-			this.ignoreRecording();
-		}
-		switch(this.state._hx_index) {
-		case 0:
-			break;
-		case 1:
-			this.engine.player._silence();
-			this.state = avis_GameState.NOP;
-			break;
-		case 2:
-			this.vStateChanged();
-			new avis_scenes_Favicon(this);
-			this.state = avis_GameState.NOP;
-			break;
-		case 3:
-			this.ignoreRecording();
-			this.vStateChanged();
-			new avis_scenes_Intro(this);
-			new avis_scenes_Keyboard(this);
-			this.state = avis_GameState.NOP;
-			break;
-		case 4:
-			this.vStateChanged();
-			new avis_scenes_Help(this,this.SICK,this.HEALTHY);
-			this.state = avis_GameState.NOP;
-			break;
-		case 5:
-			this.vStateChanged();
-			new avis_scenes_Options(this);
-			this.state = avis_GameState.NOP;
-			break;
-		case 6:
-			this.hacked = false;
-			this.totalScore = 0;
-			this.engine.player._setLoopPoint(2646000);
-			this.engine.player._setPlayBufferPointer(0);
-			this.startTheShow();
-			this.readOptions();
-			this.vStateChanged();
-			this.input = "";
-			this.lastDirections = [avis_Direction.RIGHT,avis_Direction.UP];
-			this.restart(this.level);
-			new avis_scenes_Classroom(this);
-			new avis_scenes_Keyboard(this);
-			this.state = avis_GameState.PLAYING;
-			break;
-		case 7:
-			break;
-		case 8:
-			this.guess();
-			this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-			break;
-		case 9:
-			this.engine.player._pause();
-			while(this.directions.length > 2) this.directions.shift();
-			if(this.directions.length == 2) {
-				this.preparePlay();
-				this.state = avis_GameState.SOUND_PLAY_CONTINUE;
-			}
-			this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-			break;
-		case 10:
-			this.state = avis_GameState.SOUND_PLAYING;
-			break;
-		case 11:
-			if(this.playSound(this.directions[this.playS],this.sound)) {
-				this.playS++;
-				if(this.playS == this.directions.length) {
-					this.playS = 0;
-					this.playingLetterS++;
-				}
-				if(this.playingLetterS == this.words[0].length) {
-					this.played = true;
-				} else {
-					this.sound.createWorld(this.words[0].charAt(this.playingLetterS));
-					this.pixels = 0;
-				}
-				if(this.startTime == -1) {
-					this.engine.player._continue();
-					this.engine.player._setPlayBufferPointer(0);
-					this.startTime = gox_Utilities.roundFloat(HxOverrides.now() / 1000);
-				}
-			}
-			if(this.playK() == 1) {
-				this.playW++;
-				if(this.playW == this.directions.length) {
-					this.playW = 0;
-					this.playingLetterW++;
-				}
-				this.direction = this.directions[this.playW];
-				if(this.playingLetterW == this.words[0].length) {
-					this.direction = this.directions[1];
-					this.directions = [];
-					this.state = avis_GameState.PLAYING;
-				} else {
-					this.startTime += this.playLengths[0];
-					this.playLengths.shift();
-					this.world.createWorld(this.words[0].charAt(this.playingLetterW));
-				}
-			}
-			break;
-		case 12:
-			this.totalScore = Math.max(this.totalScore,this.wordsPerLevel * (this.level + 1 - 1 / this.maxWordLength));
-			this.restart(++this.level);
-			this.state = avis_GameState.PLAYING;
-			break;
-		case 13:
-			this.restart(--this.level);
-			this.state = avis_GameState.PLAYING;
-			break;
-		case 14:
-			this.vStateChanged();
-			this.engine.player._continue();
-			this.engine.player._playSong(avis_Song.death,{ volume : 0.5});
-			new avis_scenes_GameOver(this);
-			this.pushState(avis_GameState.SILENCE,gox_Utilities.roundFloat(2.666 * this.engine._getFPS()) | 0);
-			this.pushState(avis_GameState.INTRO,gox_Utilities.roundFloat(3 * this.engine._getFPS()) | 0);
-			this.state = avis_GameState.NOP;
-			this.saveRecording();
-			break;
-		}
-		gox_y_GComponent.updateComponents();
-		gox_y_GComponent.layoutComponents();
-		gox_y_GComponent.paintComponents(this.engine);
-		this.drawCursor();
-	}
-	,listenPushes: function() {
-		if(this.pushStates.length == 0) {
-			return;
-		}
-		var toRemove = [];
-		var _g = 0;
-		var _g1 = this.pushStates;
-		while(_g < _g1.length) {
-			var s = _g1[_g];
-			++_g;
-			if(s.delay-- <= 0) {
-				this.state = s.state;
-				toRemove.push(s);
-				continue;
-			}
-		}
-		var _g = 0;
-		while(_g < toRemove.length) {
-			var t = toRemove[_g];
-			++_g;
-			HxOverrides.remove(this.pushStates,t);
-		}
-	}
-	,pushState: function(state,delay) {
-		this.pushStates.push({ state : state, delay : delay});
-	}
-	,vStateChanged: function() {
-		if(this.engine.player != null) {
-			this.engine.player._pause();
-		}
-		gox_y_GComponent.destroyComponents();
-		this.randomizeColors();
-		new gox_TopMessage(this,{ colors : this.colors, SICK : this.SICK, HEALTHY : this.HEALTHY});
-	}
-	,updateComponent: function() {
-		if(this.special) {
-			gox_y_GComponent.onMouseDraggedComponents(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),null));
-		}
-	}
-	,onKeyTyped: function(key) {
-		if(this.engine.player == null) {
-			return;
-		}
-		if(key == "\n" || key == "Enter") {
-			this.state = avis_GameState.GUESS;
-			return;
-		} else if((key == " " || key == "Space") && !this.special) {
-			this.special = true;
-			gox_y_GComponent.onMousePressedComponents(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),null));
-			this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-			return;
-		}
-		var _g = 0;
-		var _g1 = avis_AudioVisionR.alphabet.length;
-		while(_g < _g1) {
-			var i = _g++;
-			if(avis_AudioVisionR.alphabet.charAt(i) == key) {
-				this.input += key;
-				this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-				return;
-			}
-		}
-	}
-	,onKeyPressed: function(code) {
-		if(this.engine.player == null) {
-			return;
-		}
-		if(code != gox_Game.VK_F1) {
-			if(code == gox_Game.VK_ESCAPE) {
-				this.state = avis_GameState.INTRO;
-			} else if(code == gox_Game.VK_CTRL) {
-				this.directions = this.lastDirections.slice();
-				this.state = avis_GameState.SOUND_PLAY;
-			} else if(code == gox_Game.VK_RIGHT || code == gox_Game.VK_NUMPAD6) {
-				this.directions.push(avis_Direction.RIGHT);
-				this.state = avis_GameState.SOUND_PLAY;
-			} else if(code == gox_Game.VK_LEFT || code == gox_Game.VK_NUMPAD4) {
-				this.directions.push(avis_Direction.LEFT);
-				this.state = avis_GameState.SOUND_PLAY;
-			} else if(code == gox_Game.VK_UP || code == gox_Game.VK_NUMPAD8) {
-				this.directions.push(avis_Direction.UP);
-				this.state = avis_GameState.SOUND_PLAY;
-			} else if(code == gox_Game.VK_DOWN || code == gox_Game.VK_NUMPAD2) {
-				this.directions.push(avis_Direction.DOWN);
-				this.state = avis_GameState.SOUND_PLAY;
-			} else if(code == gox_Game.VK_NUMPAD_MINUS) {
-				this.state = avis_GameState.PREVIOUS_LEVEL;
-			} else if(code == gox_Game.VK_NUMPAD_PLUS) {
-				this.state = avis_GameState.NEXT_LEVEL;
-			} else if(code == gox_Game.VK_BACKSPACE) {
-				this.input = this.input.substring(0,this.input.length - 1);
-			}
-		}
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onKeyReleased: function(code) {
-		this.special = false;
-		gox_y_GComponent.onMouseReleasedComponents(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),null));
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onMousePressed: function(e) {
-		if(this.engine.player == null) {
-			this.engine._init(2646000);
-		}
-		gox_y_GComponent.onMousePressedComponents(e);
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onMouseReleased: function(e) {
-		gox_y_GComponent.onMouseReleasedComponents(e);
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onMouseMoved: function(e) {
-		gox_y_GComponent.onMouseMovedComponents(e);
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onMouseDragged: function(e) {
-		gox_y_GComponent.onMouseDraggedComponents(e);
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,onMouseEntered: function(e) {
-	}
-	,onMouseExited: function(e) {
-	}
-	,restart: function(level,alphabet) {
-		this.level = Math.max(1,Math.min(level,avis_AudioVisionR.DEFAULT.length)) | 0;
-		var tmp = alphabet;
-		var levelAlphabet = tmp != null ? tmp : avis_AudioVisionR.alphabet.substring(0,this.level);
-		var newLetter = levelAlphabet.charAt(levelAlphabet.length - 1);
-		var tmp = alphabet;
-		this.words = [HxOverrides.substr(tmp != null ? tmp : newLetter,0,null)];
-		this.wordLengths = [this.words[0].length];
-		var _g = 0;
-		var _g1 = this.wordsPerLevel;
-		while(_g < _g1) {
-			var i = _g++;
-			var word = "";
-			var wordLength = 1 + gox_Utilities.randomInt(this.maxWordLength);
-			var _g2 = 0;
-			var _g3 = wordLength;
-			while(_g2 < _g3) {
-				var d = _g2++;
-				word += levelAlphabet.charAt(gox_Utilities.randomInt(levelAlphabet.length));
-			}
-			this.words.push(word);
-			this.wordLengths.push(wordLength);
-		}
-		this.solvedLetters = 0;
-		this.solvedWords = 0;
-		this.resetGhosts();
-		this.resetGuessed();
-		this.resetTriesLeft();
-		this.world.createWorld(this.words[0].charAt(0));
-		this.fireEvent(new gox_y_GEvent(gox_Events.LEVEL_CHANGED,this.level));
-		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
-	}
-	,resetGhosts: function() {
-		this.ghosts = [];
-		var _g = 0;
-		var _g1 = this.engine._getFPS() * 0.666 | 0;
-		while(_g < _g1) {
-			var i = _g++;
-			this.ghosts.push(this.playK());
-		}
-	}
-	,resetGuessed: function() {
-		this.guessed = "";
-		var _g = 0;
-		var _g1 = this.wordLengths[0];
-		while(_g < _g1) {
-			var i = _g++;
-			this.guessed += "_ ";
-		}
-		this.guessed = this.guessed.substring(0,this.guessed.length - 1);
-	}
-	,resetTriesLeft: function() {
-		this.triesLeft = 2;
-	}
-	,guess: function() {
-		if(this.input.length == 0) {
-			this.state = avis_GameState.PLAYING;
-			return;
-		}
-		this.engine.player._silence();
-		this.engine.player._continue();
-		this.startTime = -1;
-		var _g = 0;
-		var _g1 = Math.min(this.input.length,this.words[0].length) | 0;
-		while(_g < _g1) {
-			var i = _g++;
-			if(!this.sameChars(this.words[0].charAt(i),this.input.charAt(i))) {
-				this.guessedWrong();
-				return;
-			} else {
-				this.guessed = gox_Utilities.setChar(this.guessed,this.solvedLetters * 2,this.words[0].charAt(0));
-				this.solvedLetters++;
-				this.words[0] = HxOverrides.substr(this.words[0],1,null);
-				this.input = this.input.substring(1);
-			}
-		}
-		this.guessedRight();
-	}
-	,sameChars: function(a,b) {
-		var serbian = "АВСЕНЈКМОРТХасејорху";
-		var english = "ABCEHJKMOPTXacejopxy";
-		var _g = 0;
-		var _g1 = serbian.length;
-		while(_g < _g1) {
-			var i = _g++;
-			if(a == serbian.charAt(i) && b == english.charAt(i) || b == serbian.charAt(i) && a == english.charAt(i)) {
-				return true;
-			}
-		}
-		return a == b;
-	}
-	,guessedWrong: function() {
-		this.input = "";
-		if(this.solvedWords > 0) {
-			this.triesLeft--;
-		}
-		this.playWrong();
-		if(this.triesLeft <= 0) {
-			this.totalScore = this.hacked ? -666 : this.totalScore;
-			this.state = avis_GameState.GAME_OVER;
-		} else {
-			this.state = avis_GameState.PLAYING;
-		}
-	}
-	,guessedRight: function() {
-		this.resetTriesLeft();
-		if(this.solvedLetters == this.wordLengths[0]) {
-			this.words.shift();
-			this.wordLengths.shift();
-			this.solvedWords++;
-			this.solvedLetters = 0;
-			this.resetGuessed();
-			this.resetTriesLeft();
-			if(this.words.length == 0) {
-				this.playNextLevel();
-				this.state = avis_GameState.NEXT_LEVEL;
-			} else {
-				this.playCorrect();
-				this.world.createWorld(this.words[0].charAt(0));
-				this.state = avis_GameState.PLAYING;
-			}
-		} else {
-			this.playCorrect();
-			this.world.createWorld(this.words[0].charAt(0));
-			this.state = avis_GameState.PLAYING;
-		}
-	}
-	,playK: function() {
-		if(this.startTime < 0) {
-			return 0;
-		}
-		if(this.playLengths.length == 0) {
-			return 0;
-		}
-		return gox_Utilities.roundFloat(Math.min((HxOverrides.now() / 1000 - this.startTime) / this.playLengths[0],1));
-	}
-	,preparePlay: function() {
-		this.skip = Math.ceil(90 * this.dt);
-		this.played = false;
-		this.pixels = 0;
-		this.delay = 0;
-		this.playLengths = [];
-		this.playW = 0;
-		this.playS = 0;
-		this.playingLetterW = 0;
-		this.playingLetterS = 0;
-		this.startTime = -1;
-		this.lastDirections = this.directions.slice();
-		this.direction = this.directions[0];
-		this.world.createWorld(this.words[0].charAt(0));
-		this.sound.set(this.world);
-	}
-	,playSound: function(direction,world) {
-		if(this.engine.player == null) {
-			return false;
-		}
-		if(this.played) {
-			return false;
-		}
-		var left = world.left;
-		var top = world.top;
-		var right = world.right;
-		var bottom = world.bottom;
-		var width = right - left + 1;
-		var height = bottom - top + 1;
-		var freq = 1024;
-		var stepsW = 2 / width;
-		var stepsH = 2 / height;
-		var power = 1;
-		var t = this.maxPlayTime;
-		var chunk = 44100 / this.worldHeight * t | 0;
-		var amplitude = 0.666;
-		switch(direction._hx_index) {
-		case 0:
-			var x = right - this.pixels;
-			while(x-- >= left + 1) {
-				var _g = top;
-				var _g1 = bottom + 1;
-				while(_g < _g1) {
-					var y = _g++;
-					if(world.playable(x,y)) {
-						this.engine.player._playSound({ frequency : freq * Math.pow(2,(-(y - bottom) - height / 2) * stepsH), clip : 0.5, power : power, startFrame : this.delay, endFrame : this.delay + chunk, phase : 0, amplitude : amplitude});
-					}
-				}
-				this.delay += chunk;
-				if(this.pixels == 0) {
-					this.playLengths.push(width * chunk / 44100);
-				}
-				if(x == left) {
-					return true;
-				}
-				if(++this.pixels % this.skip == 0) {
-					return false;
-				}
-			}
-			break;
-		case 1:
-			var y = bottom - this.pixels;
-			while(y-- >= top + 1) {
-				var _g = left;
-				var _g1 = right + 1;
-				while(_g < _g1) {
-					var x = _g++;
-					if(world.playable(x,y)) {
-						var ky = (y - top) / height;
-						this.engine.player._playSound({ frequency : freq * Math.pow(2,(x - left - width / 2) * stepsW), clip : 0.5, power : power, startFrame : this.delay, endFrame : this.delay + chunk, phase : 0, amplitude : amplitude});
-					}
-				}
-				this.delay += chunk;
-				if(this.pixels == 0) {
-					this.playLengths.push(height * chunk / 44100);
-				}
-				if(y == top) {
-					return true;
-				}
-				if(++this.pixels % this.skip == 0) {
-					return false;
-				}
-			}
-			break;
-		case 2:
-			var _g = left + this.pixels;
-			var _g1 = right + 1;
-			while(_g < _g1) {
-				var x = _g++;
-				var _g2 = top;
-				var _g3 = bottom + 1;
-				while(_g2 < _g3) {
-					var y = _g2++;
-					if(world.playable(x,y)) {
-						this.engine.player._playSound({ frequency : freq * Math.pow(2,(-(y - bottom) - height / 2) * stepsH), clip : 0.5, power : power, startFrame : this.delay, endFrame : this.delay + chunk, phase : 0, amplitude : amplitude});
-					}
-				}
-				this.delay += chunk;
-				if(this.pixels == 0) {
-					this.playLengths.push(width * chunk / 44100);
-				}
-				if(x == right) {
-					return true;
-				}
-				if(++this.pixels % this.skip == 0) {
-					return false;
-				}
-			}
-			break;
-		case 3:
-			var _g = top + this.pixels;
-			var _g1 = bottom + 1;
-			while(_g < _g1) {
-				var y = _g++;
-				var _g2 = left;
-				var _g3 = right + 1;
-				while(_g2 < _g3) {
-					var x = _g2++;
-					if(world.playable(x,y)) {
-						this.engine.player._playSound({ frequency : freq * Math.pow(2,(x - left - width / 2) * stepsW), clip : 0.5, power : power, startFrame : this.delay, endFrame : this.delay + chunk, phase : 0, amplitude : amplitude});
-					}
-				}
-				this.delay += chunk;
-				if(this.pixels == 0) {
-					this.playLengths.push(height * chunk / 44100);
-				}
-				if(y == bottom) {
-					return true;
-				}
-				if(++this.pixels % this.skip == 0) {
-					return false;
-				}
-			}
-			break;
-		}
-		return false;
-	}
-	,playCorrect: function() {
-		if(this.engine.player == null) {
-			return;
-		}
-		var offset = this.engine.player._getPlayBufferPointer();
-		var k = 8;
-		var chunk = 44100 / k / 3 | 0;
-		var _g = 1;
-		var _g1 = k + 1;
-		while(_g < _g1) {
-			var i = _g++;
-			this.engine.player._playSound({ frequency : 1024 * i, clip : 0.333, power : 1, startFrame : offset + i * chunk, endFrame : offset + (i + 1) * chunk, phase : 0, amplitude : 0.666});
-		}
-	}
-	,playWrong: function() {
-		if(this.engine.player == null) {
-			return;
-		}
-		var offset = this.engine.player._getPlayBufferPointer();
-		var k = 8;
-		var chunk = 44100 / k / 3 | 0;
-		var _g = 1;
-		var _g1 = k + 1;
-		while(_g < _g1) {
-			var i = _g++;
-			this.engine.player._playSound({ frequency : 1024 / i, clip : 0.333, power : 1, startFrame : offset + i * chunk, endFrame : offset + (i + 1) * chunk, phase : 0, amplitude : 0.666});
-		}
-	}
-	,playNextLevel: function() {
-		if(this.engine.player == null) {
-			return;
-		}
-		var offset = this.engine.player._getPlayBufferPointer();
-		var k = 8;
-		var chunk = 44100 / k / 3 | 0;
-		var _g = 1;
-		var _g1 = k + 1;
-		while(_g < _g1) {
-			var i = _g++;
-			this.engine.player._playSound({ frequency : 128 * i, clip : 0.333, power : 1, startFrame : offset + i * chunk, endFrame : offset + (i + 1) * chunk, phase : 0, amplitude : 0.666});
-		}
-	}
-	,drawWorld: function() {
-		this.clearScreen(this.background);
-		if(this.solvedWords > 0) {
-			return;
-		}
-		this.engine._setColor(this.foreground);
-		var c = this.world.left * this.q;
-		var a = this.topMessengerSize + this.world.top * this.q;
-		var _g = this.world.top;
-		var _g1 = this.world.bottom + 1;
-		while(_g < _g1) {
-			var y = _g++;
-			var b = c;
-			var _g2 = this.world.left;
-			var _g3 = this.world.right + 1;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				if(this.world.matrix[y][x] != 0) {
-					this.engine._fillRect(b,a,this.q,this.q);
-				}
-				b += this.q;
-			}
-			a += this.q;
-		}
-	}
-	,drawPlayhead: function() {
-		this.ghosts.push(this.playK());
-		this.ghosts.shift();
-		this.engine._setStroke(16);
-		var _g = 0;
-		var _g1 = this.ghosts.length;
-		while(_g < _g1) {
-			var i = _g++;
-			var g = this.ghosts[i];
-			var k = i / this.ghosts.length;
-			var color = new gox_HSB(-this.playK() + k,1,1).toRGB().alpha(k * 64);
-			this.engine._setColor(color);
-			switch(this.direction._hx_index) {
-			case 0:
-				this.drawPlayheadLeft(g);
-				break;
-			case 1:
-				this.drawPlayheadUp(g);
-				break;
-			case 2:
-				this.drawPlayheadRight(g);
-				break;
-			case 3:
-				this.drawPlayheadDown(g);
-				break;
-			}
-		}
-	}
-	,drawPlayheadDown: function(k) {
-		var x1 = this.world.left;
-		var x2 = this.world.right + 1;
-		var y = Math.round(this.world.top + (this.world.bottom - this.world.top) * k);
-		this.engine._drawLine(x1 * this.q,this.topMessengerSize + y * this.q,x2 * this.q,this.topMessengerSize + y * this.q);
-	}
-	,drawPlayheadRight: function(k) {
-		var y1 = this.world.top;
-		var y2 = this.world.bottom + 1;
-		var x = Math.round(this.world.left + (this.world.right - this.world.left) * k);
-		this.engine._drawLine(x * this.q,this.topMessengerSize + y1 * this.q,x * this.q,this.topMessengerSize + y2 * this.q);
-	}
-	,drawPlayheadLeft: function(k) {
-		var y1 = this.world.top;
-		var y2 = this.world.bottom + 1;
-		var x = Math.round(this.world.right + (this.world.left - this.world.right) * k);
-		this.engine._drawLine(x * this.q,this.topMessengerSize + y1 * this.q,x * this.q,this.topMessengerSize + y2 * this.q);
-	}
-	,drawPlayheadUp: function(k) {
-		var x1 = this.world.left;
-		var x2 = this.world.right + 1;
-		var y = Math.round(this.world.bottom + (this.world.top - this.world.bottom) * k);
-		this.engine._drawLine(x1 * this.q,this.topMessengerSize + y * this.q,x2 * this.q,this.topMessengerSize + y * this.q);
-	}
-	,getR: function(r) {
-		return new gox_FloatRange(-r,r).getRandom();
-	}
-	,randomizeColors: function() {
-		this.background = new gox_HSB(Math.random(),0.333,0.05).toRGB();
-		this.foreground = gox_Color.WHITE;
-		this.colors[0] = this.background;
-		var r = this.crazyness / 100;
-		var h = Math.random();
-		var s = 1.0;
-		var b = 1.0;
-		this.colors[this.SICK] = new gox_HSB(h + this.getR(r),s + this.getR(r),b + this.getR(r)).toRGB();
-		this.colors[this.HEALTHY] = new gox_HSB(h + 0.5 + this.getR(r),s + this.getR(r),b + this.getR(r)).toRGB();
-		this.fireEvent(new gox_y_GEvent(gox_Events.RANDOMIZE_COLORS));
-	}
-});
-var avis_Direction = $hxEnums["avis.Direction"] = { __ename__:true,__constructs__:null
-	,LEFT: {_hx_name:"LEFT",_hx_index:0,__enum__:"avis.Direction",toString:$estr}
-	,UP: {_hx_name:"UP",_hx_index:1,__enum__:"avis.Direction",toString:$estr}
-	,RIGHT: {_hx_name:"RIGHT",_hx_index:2,__enum__:"avis.Direction",toString:$estr}
-	,DOWN: {_hx_name:"DOWN",_hx_index:3,__enum__:"avis.Direction",toString:$estr}
-};
-avis_Direction.__constructs__ = [avis_Direction.LEFT,avis_Direction.UP,avis_Direction.RIGHT,avis_Direction.DOWN];
-var avis_GameState = $hxEnums["avis.GameState"] = { __ename__:true,__constructs__:null
-	,NOP: {_hx_name:"NOP",_hx_index:0,__enum__:"avis.GameState",toString:$estr}
-	,SILENCE: {_hx_name:"SILENCE",_hx_index:1,__enum__:"avis.GameState",toString:$estr}
-	,FAVICON: {_hx_name:"FAVICON",_hx_index:2,__enum__:"avis.GameState",toString:$estr}
-	,INTRO: {_hx_name:"INTRO",_hx_index:3,__enum__:"avis.GameState",toString:$estr}
-	,HELP: {_hx_name:"HELP",_hx_index:4,__enum__:"avis.GameState",toString:$estr}
-	,OPTIONS: {_hx_name:"OPTIONS",_hx_index:5,__enum__:"avis.GameState",toString:$estr}
-	,NEW_GAME: {_hx_name:"NEW_GAME",_hx_index:6,__enum__:"avis.GameState",toString:$estr}
-	,PLAYING: {_hx_name:"PLAYING",_hx_index:7,__enum__:"avis.GameState",toString:$estr}
-	,GUESS: {_hx_name:"GUESS",_hx_index:8,__enum__:"avis.GameState",toString:$estr}
-	,SOUND_PLAY: {_hx_name:"SOUND_PLAY",_hx_index:9,__enum__:"avis.GameState",toString:$estr}
-	,SOUND_PLAY_CONTINUE: {_hx_name:"SOUND_PLAY_CONTINUE",_hx_index:10,__enum__:"avis.GameState",toString:$estr}
-	,SOUND_PLAYING: {_hx_name:"SOUND_PLAYING",_hx_index:11,__enum__:"avis.GameState",toString:$estr}
-	,NEXT_LEVEL: {_hx_name:"NEXT_LEVEL",_hx_index:12,__enum__:"avis.GameState",toString:$estr}
-	,PREVIOUS_LEVEL: {_hx_name:"PREVIOUS_LEVEL",_hx_index:13,__enum__:"avis.GameState",toString:$estr}
-	,GAME_OVER: {_hx_name:"GAME_OVER",_hx_index:14,__enum__:"avis.GameState",toString:$estr}
-};
-avis_GameState.__constructs__ = [avis_GameState.NOP,avis_GameState.SILENCE,avis_GameState.FAVICON,avis_GameState.INTRO,avis_GameState.HELP,avis_GameState.OPTIONS,avis_GameState.NEW_GAME,avis_GameState.PLAYING,avis_GameState.GUESS,avis_GameState.SOUND_PLAY,avis_GameState.SOUND_PLAY_CONTINUE,avis_GameState.SOUND_PLAYING,avis_GameState.NEXT_LEVEL,avis_GameState.PREVIOUS_LEVEL,avis_GameState.GAME_OVER];
-var avis_Song = function() { };
-avis_Song.__name__ = true;
-var avis_World = function(game) {
-	this.game = game;
-	this.engine = game.engine;
-	this.worldWidth = game.worldWidth;
-	this.worldHeight = game.worldHeight;
-	var _g = [];
-	var _g1 = 0;
-	var _g2 = this.worldHeight;
-	while(_g1 < _g2) {
-		var y = _g1++;
-		var _g3 = [];
-		var _g4 = 0;
-		var _g5 = this.worldWidth;
-		while(_g4 < _g5) {
-			var x = _g4++;
-			_g3.push(0);
-		}
-		_g.push(_g3);
-	}
-	this.matrix = _g;
-	var _g = [];
-	var _g1 = 0;
-	var _g2 = this.worldHeight;
-	while(_g1 < _g2) {
-		var y = _g1++;
-		var _g3 = [];
-		var _g4 = 0;
-		var _g5 = this.worldWidth;
-		while(_g4 < _g5) {
-			var x = _g4++;
-			_g3.push(0);
-		}
-		_g.push(_g3);
-	}
-	this.matrix2 = _g;
-};
-avis_World.__name__ = true;
-avis_World.prototype = {
-	set: function(world) {
-		var _g = 0;
-		var _g1 = this.worldHeight;
-		while(_g < _g1) {
-			var y = _g++;
-			var _g2 = 0;
-			var _g3 = this.worldWidth;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				this.matrix[y][x] = world.matrix[y][x];
-			}
-		}
-		this.left = world.left;
-		this.top = world.top;
-		this.right = world.right;
-		this.bottom = world.bottom;
-	}
-	,createWorld: function(char) {
-		this.engine._selectBuffer(1);
-		this.writeLetter(char);
-		this.morphPixels(this.matrix);
-		this.findBounds();
-		var width = this.right - this.left + 1;
-		var goodLeft = (this.worldWidth - width) / 2;
-		var height = this.bottom - this.top + 1;
-		var goodTop = (this.worldHeight - height) / 2;
-		var offsetX = goodLeft - this.left | 0;
-		var offsetY = goodTop - this.top | 0;
-		this.offsetWorld(offsetX,offsetY);
-		this.left += offsetX;
-		this.top += offsetY;
-		this.right += offsetX;
-		this.bottom += offsetY;
-		this.game.engine._selectBuffer(0);
-	}
-	,playable: function(x,y) {
-		if(y + (-1) < 0 || y + (-1) >= this.worldHeight) {
-			return false;
-		}
-		if(x + (-1) < 0 || x + (-1) >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + (-1)][x + (-1)] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x < 0 || x >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + (-1)][x] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x + 1 < 0 || x + 1 >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + (-1)][x + 1] != this.matrix[y][x]) {
-			return true;
-		}
-		if(y < 0 || y >= this.worldHeight) {
-			return false;
-		}
-		if(x + (-1) < 0 || x + (-1) >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y][x + (-1)] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x < 0 || x >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y][x] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x + 1 < 0 || x + 1 >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y][x + 1] != this.matrix[y][x]) {
-			return true;
-		}
-		if(y + 1 < 0 || y + 1 >= this.worldHeight) {
-			return false;
-		}
-		if(x + (-1) < 0 || x + (-1) >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + 1][x + (-1)] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x < 0 || x >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + 1][x] != this.matrix[y][x]) {
-			return true;
-		}
-		if(x + 1 < 0 || x + 1 >= this.worldWidth) {
-			return false;
-		}
-		if(this.matrix[y + 1][x + 1] != this.matrix[y][x]) {
-			return true;
-		}
-		return false;
-	}
-	,offsetWorld: function(offsetX,offsetY) {
-		var _g = 0;
-		var _g1 = this.worldHeight;
-		while(_g < _g1) {
-			var y = _g++;
-			var _g2 = 0;
-			var _g3 = this.worldWidth;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				this.matrix2[y][x] = 0;
-			}
-		}
-		var left = Math.max(0,offsetX) | 0;
-		var top = Math.max(0,offsetY) | 0;
-		var right = Math.min(this.worldWidth - 1,this.worldWidth - 1 + offsetX) | 0;
-		var bottom = Math.min(this.worldHeight - 1,this.worldHeight - 1 + offsetY) | 0;
-		var _g = top;
-		var _g1 = bottom;
-		while(_g < _g1) {
-			var y = _g++;
-			var sy = y - offsetY;
-			var _g2 = left;
-			var _g3 = right;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				var sx = x - offsetX;
-				this.matrix2[y][x] = this.matrix[sy][sx];
-			}
-		}
-		var _g = 0;
-		var _g1 = this.worldHeight;
-		while(_g < _g1) {
-			var y = _g++;
-			var _g2 = 0;
-			var _g3 = this.worldWidth;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				this.matrix[y][x] = this.matrix2[y][x];
-			}
-		}
-	}
-	,writeLetter: function(letter) {
-		this.engine._setColor(gox_Color.BLACK);
-		this.engine._fillRect(0,0,this.worldWidth,this.worldHeight);
-		this.engine._setColor(gox_Color.WHITE);
-		this.engine._drawTextCentered(letter,this.worldHeight >> 1,this.worldWidth >> 1,this.worldHeight >> 1);
-	}
-	,morphPixels: function(world) {
-		this.engine._getBluePixels(0,0,this.worldWidth,this.worldHeight,world);
-	}
-	,findBounds: function() {
-		this.left = this.worldWidth - 1;
-		this.top = this.worldHeight - 1;
-		this.right = 0;
-		this.bottom = 0;
-		var _g = 0;
-		var _g1 = this.worldHeight;
-		while(_g < _g1) {
-			var y = _g++;
-			var _g2 = 0;
-			var _g3 = this.worldWidth;
-			while(_g2 < _g3) {
-				var x = _g2++;
-				if(this.matrix[y][x] != 0) {
-					if(x < this.left) {
-						this.left = x;
-					}
-					if(x > this.right) {
-						this.right = x;
-					}
-					if(y < this.top) {
-						this.top = y;
-					}
-					if(y > this.bottom) {
-						this.bottom = y;
-					}
-				}
-			}
-		}
-	}
-};
-var avis_scenes_LetterPainter = function(game) {
-	gox_y_GComponent.call(this);
-	this.game = game;
-};
-avis_scenes_LetterPainter.__name__ = true;
-avis_scenes_LetterPainter.__super__ = gox_y_GComponent;
-avis_scenes_LetterPainter.prototype = $extend(gox_y_GComponent.prototype,{
-	paintComponent: function(engine) {
-		this.game.drawWorld();
-		this.game.drawPlayhead();
-	}
-});
-var avis_scenes_Classroom = function(game) {
-	this.interactedChar = "";
-	this.scrolledLetter = 0;
-	this.scrolledLevel = 0;
-	this.pressedScrollX = 0;
-	gox_y_GComponent.call(this);
-	avis_scenes_Classroom.instance = this;
-	this.game = game;
-	this.createColors();
-	this.addScreen();
-	this.addLetter();
-	this.addTop();
-	this.addBottom();
-	game.addEventListener(this);
-	this.onEvent(null);
-};
-avis_scenes_Classroom.__name__ = true;
-avis_scenes_Classroom.__super__ = gox_y_GComponent;
-avis_scenes_Classroom.prototype = $extend(gox_y_GComponent.prototype,{
-	onEvent: function(e) {
-		this.infoButton.p.text = this.game.solvedWords == 0 ? "Level: " + this.game.words[0] : "Word " + this.game.solvedWords + ": " + this.game.guessed;
-		this.infoButton.pack();
-		if(this.game.input.length > 0 && this.game.sameChars(this.game.input.charAt(this.game.input.length - 1),this.interactedChar)) {
-			this.inputButton.p.text = "Input : " + this.game.input + "↵";
-		} else {
-			this.inputButton.p.text = "Input : " + this.game.input + this.interactedChar;
-		}
-		this.inputButton.pack();
-		var lastDirectionsText = "";
-		var _g = 0;
-		var _g1 = this.game.lastDirections.length;
-		while(_g < _g1) {
-			var i = _g++;
-			lastDirectionsText += this.dir2string(this.game.lastDirections[i]);
-		}
-		this.playButton.p.text = "Play " + lastDirectionsText;
-		this.playButton.pack();
-	}
-	,listeningTo: function() {
-		return [gox_Events.PLAYER_INTERACTED];
-	}
-	,createColors: function() {
-		this.backgrounds = new Array(5);
-		this.foregrounds = new Array(5);
-		this.borders = new Array(5);
-		var hue = gox_Utilities.random();
-		var sat = new gox_FloatRange(0.5,1).getRandom();
-		var sign = gox_Utilities.random() > 0.5 ? 1 : -1;
-		var shift = this.game.getR(1);
-		var _g = 0;
-		var _g1 = this.backgrounds.length;
-		while(_g < _g1) {
-			var i = _g++;
-			var k = i / (this.backgrounds.length - 1);
-			this.backgrounds[i] = gox_Color.BLACK;
-			this.foregrounds[i] = new gox_HSB(k * 2 / 3 + shift,0.5,1).toRGB();
-			this.borders[i] = new gox_HSB(k * 2 / 3,0.5,1).toRGB();
-		}
-	}
-	,addScreen: function() {
-		var _gthis = this;
-		this.screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH});
-		this.screen.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			var v = new gox_Vector2D(e.x - _gthis.game.resolutionW / 2,e.y - _gthis.game.resolutionH / 2);
-			v.multiply(1 / v.length());
-			if(Math.abs(v.signedAngleTo(new gox_Vector2D(-1,0))) <= Math.PI / 4) {
-				_gthis.game.directions.push(avis_Direction.LEFT);
-			} else if(Math.abs(v.signedAngleTo(new gox_Vector2D(0,-1))) <= Math.PI / 4) {
-				_gthis.game.directions.push(avis_Direction.UP);
-			} else if(Math.abs(v.signedAngleTo(new gox_Vector2D(1,0))) <= Math.PI / 4) {
-				_gthis.game.directions.push(avis_Direction.RIGHT);
-			} else if(Math.abs(v.signedAngleTo(new gox_Vector2D(0,1))) <= Math.PI / 4) {
-				_gthis.game.directions.push(avis_Direction.DOWN);
-			}
-			_gthis.game.state = avis_GameState.SOUND_PLAY;
-		}}));
-	}
-	,addLetter: function() {
-		var letter = new avis_scenes_LetterPainter(this.game);
-		letter.width = this.game.resolutionW;
-		letter.height = this.game.resolutionH;
-		this.screen.addChild(letter);
-	}
-	,addTop: function() {
-		var _gthis = this;
-		var topBar = new gox_y_GButton({ width : this.game.resolutionW, height : this.game.fontSize * 2});
-		this.screen.addChild(topBar);
-		topBar.setLayoutManager(new gox_l_GCenterLayout());
-		var flow = new gox_y_GButton({ height : this.game.fontSize * 2});
-		flow.setLayoutManager(new gox_l_GFlowLayout({ spacing : 0, leftToRight : true, resizable : true}));
-		topBar.addChild(flow);
-		var hamburger = new gox_y_GButton({ foreground : gox_Color.WHITE, background : gox_Color.WHITE.duplicate().multiply(0.5), textSize : this.game.fontSize, margin : this.game.fontSize >> 1, text : "☰"});
-		hamburger.pack();
-		flow.addChild(hamburger);
-		this.infoButton = new gox_y_GButton({ background : gox_Color.WHITE, foreground : gox_Color.BLACK, textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
-		flow.addChild(this.infoButton);
-		hamburger.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.game.removeEventListener(_gthis);
-			_gthis.game.state = avis_GameState.INTRO;
-		}}));
-	}
-	,addBottom: function() {
-		var _gthis = this;
-		var bottomBar = new gox_y_GButton({ y : this.game.resolutionH - this.game.fontSize * 2 - avis_scenes_Classroom.borderWidth, width : this.game.resolutionW, height : this.game.fontSize * 2, background : new gox_HSB(gox_Utilities.random(),0.5,0.1).toRGB(), foreground : new gox_HSB(gox_Utilities.random(),0.5,1).toRGB(), borderWidth : 2, borderColor : new gox_HSB(gox_Utilities.random(),0.5,1).toRGB(), text : StringTools.rpad("",":",136), textSize : this.game.fontSize});
-		this.screen.addChild(bottomBar);
-		bottomBar.setLayoutManager(new gox_l_GCenterLayout());
-		var flow = new gox_y_GButton({ height : this.game.fontSize * 2});
-		bottomBar.addChild(flow);
-		flow.setLayoutManager(new gox_l_GFlowLayout({ spacing : 0, leftToRight : true, resizable : true}));
-		this.inputButton = new gox_y_GButton({ background : this.backgrounds[0], foreground : this.foregrounds[0], borderColor : this.borders[0], borderWidth : avis_scenes_Classroom.borderWidth, textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
-		flow.addChild(this.inputButton);
-		this.playButton = new gox_y_GButton({ background : this.backgrounds[1], foreground : this.foregrounds[1], borderColor : this.borders[1], borderWidth : avis_scenes_Classroom.borderWidth, textSize : this.game.fontSize, margin : this.game.fontSize >> 1, text : "Play"});
-		this.playButton.pack();
-		flow.addChild(this.playButton);
-		this.okButton = new gox_y_GButton({ background : this.backgrounds[2], foreground : this.foregrounds[2], borderColor : this.borders[2], borderWidth : avis_scenes_Classroom.borderWidth, textSize : this.game.fontSize, margin : this.game.fontSize >> 1, text : "Okay"});
-		this.okButton.pack();
-		flow.addChild(this.okButton);
-		this.backButton = new gox_y_GButton({ background : this.backgrounds[3], foreground : this.foregrounds[3], borderColor : this.borders[3], borderWidth : avis_scenes_Classroom.borderWidth, textSize : this.game.fontSize, margin : this.game.fontSize >> 1, text : "Back"});
-		this.backButton.pack();
-		flow.addChild(this.backButton);
-		this.hackButton = new gox_y_GButton({ background : this.backgrounds[4], foreground : this.foregrounds[4], borderColor : this.borders[4], borderWidth : avis_scenes_Classroom.borderWidth, textSize : this.game.fontSize, margin : this.game.fontSize >> 1, text : "Hack"});
-		this.hackButton.pack();
-		flow.addChild(this.hackButton);
-		this.playButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			var tmp = _gthis.game.lastDirections.slice();
-			_gthis.game.directions = tmp;
-			_gthis.game.state = avis_GameState.SOUND_PLAY;
-		}}));
-		this.okButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.game.state = avis_GameState.GUESS;
-			_gthis.interactedChar = "";
-			avis_scenes_Keyboard.instance.resetHighlighted();
-		}}));
-		this.backButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.interactedChar = "";
-			_gthis.game.input = HxOverrides.substr(_gthis.game.input,0,_gthis.game.input.length - 1);
-		}}));
-		this.hackButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			if(_gthis.game.input.length == 0) {
-				return;
-			}
-			_gthis.game.hacked = true;
-			_gthis.game.restart(_gthis.game.level,_gthis.game.input);
-			var tmp = _gthis.game.lastDirections.slice();
-			_gthis.game.directions = tmp;
-			_gthis.game.state = avis_GameState.SOUND_PLAY;
-			_gthis.game.words[0] = HxOverrides.substr(_gthis.game.input,0,null);
-			_gthis.game.wordLengths[0] = _gthis.game.input.length;
-		}}));
-		bottomBar.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.pressedScrollX = e.x;
-			if(_gthis.pressedScrollX < _gthis.game.resolutionW / 2) {
-				_gthis.scrolledLevel = _gthis.game.level;
-			} else {
-				_gthis.fatFingerSelect(e.x);
-			}
-		}, onMouseReleased : function(e) {
-			if(_gthis.pressedScrollX < _gthis.game.resolutionW / 2) {
-				_gthis.scrolledLevel = _gthis.game.level;
-			} else {
-				_gthis.scrolledLetter = _gthis.fatFingerSelect(e.x);
-			}
-		}, onMouseDragged : function(e) {
-			if(_gthis.pressedScrollX < _gthis.game.resolutionW / 2) {
-				var letter = _gthis.x2letter(_gthis.scrolledLevel,e.x);
-				_gthis.game.restart(letter + 1);
-			} else {
-				_gthis.fatFingerSelect(e.x);
-			}
-		}}));
-	}
-	,x2letter: function(baseLetter,x) {
-		return Math.max(0,Math.min(baseLetter + (x - this.pressedScrollX) / this.game.resolutionW * (avis_AudioVisionR.DEFAULT.length - 1),avis_AudioVisionR.DEFAULT.length - 1)) | 0;
-	}
-	,fatFingerSelect: function(x) {
-		var letter = this.x2letter(this.scrolledLetter,x);
-		this.game.input = avis_AudioVisionR.DEFAULT.charAt(letter);
-		this.interactedChar = avis_AudioVisionR.DEFAULT.charAt(letter);
-		avis_scenes_Keyboard.instance.resetHighlighted(avis_scenes_Keyboard.instance.buttons[letter]);
-		return letter;
-	}
-	,dir2string: function(dir) {
-		switch(dir._hx_index) {
-		case 0:
-			return "←";
-		case 1:
-			return "↑";
-		case 2:
-			return "→";
-		case 3:
-			return "↓";
-		}
-	}
-});
-var avis_scenes_Favicon = function(game) {
-	gox_y_GComponent.call(this);
-	this.game = game;
-	var _g = [];
-	var _g1 = 0;
-	var _g2 = game.resolutionH;
-	while(_g1 < _g2) {
-		var y = _g1++;
-		var _g3 = [];
-		var _g4 = 0;
-		var _g5 = game.resolutionW;
-		while(_g4 < _g5) {
-			var x = _g4++;
-			_g3.push(0);
-		}
-		_g.push(_g3);
-	}
-	this.pixels = _g;
-};
-avis_scenes_Favicon.__name__ = true;
-avis_scenes_Favicon.__super__ = gox_y_GComponent;
-avis_scenes_Favicon.prototype = $extend(gox_y_GComponent.prototype,{
-	updateComponent: function() {
-		this.game.clearScreen(gox_Color.BLACK);
-		this.game.engine._setColor(gox_Color.WHITE);
-		this.game.engine._drawTextCentered("Г",100,50,this.game.topMessengerSize + 50);
-		this.game.engine._getBluePixels(0,0,this.game.resolutionW,this.game.resolutionH,this.pixels);
-		var _g = 0;
-		while(_g < 100) {
-			var y = _g++;
-			var _g1 = 0;
-			while(_g1 < 100) {
-				var x = _g1++;
-				var color;
-				if(this.pixels[y + this.game.topMessengerSize][x] == 0) {
-					color = new gox_HSB(y / 33.3333333333333357 + x / 33.3333333333333357,1,0.333).toRGB();
-				} else {
-					color = new gox_HSB(y / 33.3333333333333357 + x / 33.3333333333333357,1,1).toRGB();
-				}
-				this.game.engine._setColor(color);
-				this.game.engine._fillRect(x,this.game.topMessengerSize + y,1,1);
-			}
-		}
-	}
-});
-var avis_scenes_GameOver = function(game) {
-	gox_y_GComponent.call(this);
-	var screen = new gox_y_GButton({ y : game.topMessengerSize, width : game.resolutionW, height : game.resolutionH});
-	screen.setLayoutManager(new gox_l_GCenterLayout());
-	var menu = new gox_y_GButton({ width : game.resolutionW * 0.444 | 0, height : game.resolutionH / 3 | 0});
-	menu.setLayoutManager(new gox_l_GEvenVecticalLayout(-16));
-	screen.addChild(menu);
-	var message1 = new gox_y_GButton({ background : gox_Color.RED.duplicate().multiply(0.333), foreground : new gox_Color(255,64,64), text : "GAME OVER :: it was " + game.words[0] + ".. .", textSize : game.fontSize, margin : game.fontSize >> 1, borderWidth : 1, borderColor : gox_Color.RED});
-	menu.addChild(message1);
-	var message2 = new gox_y_GButton({ background : new gox_Color(64,64,64), foreground : new gox_Color(64,64,64).oposite(), text : "Final salary : " + game.totalScore + " $", textSize : game.fontSize, margin : game.fontSize >> 1, borderWidth : 1, borderColor : new gox_Color(64,64,64).oposite()});
-	menu.addChild(message2);
-};
-avis_scenes_GameOver.__name__ = true;
-avis_scenes_GameOver.__super__ = gox_y_GComponent;
-avis_scenes_GameOver.prototype = $extend(gox_y_GComponent.prototype,{
-});
-var gox_Help = function(game,r1,r2) {
-	this.game = game;
-	this.r1 = r1;
-	this.r2 = r2;
-	this.init();
-};
-gox_Help.__name__ = true;
-gox_Help.prototype = {
-	init: function() {
-		var _gthis = this;
-		var backgroundScreen = this.game.colors[this.r1].duplicate().mix(this.game.colors[this.r2]).multiply(0.666);
-		var backgroundMenu = backgroundScreen.duplicate().multiply(0.5);
-		var foreground = backgroundMenu.oposite();
-		var screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH, background : backgroundScreen});
-		screen.setLayoutManager(new gox_l_GCenterLayout());
-		var menuContent = new gox_y_GButton({ width : Math.round(this.game.resolutionW * 0.8), height : Math.round(this.game.resolutionH), background : backgroundMenu});
-		screen.addChild(menuContent);
-		var textHolder = new gox_y_GButton({ width : this.game.resolutionW * 0.8 | 0, height : this.getText().length * this.game.fontSize * 1.6 | 0});
-		textHolder.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		screen.addChild(textHolder);
-		var lines = this.getText();
-		var _g = 0;
-		var _g1 = lines.length;
-		while(_g < _g1) {
-			var i = _g++;
-			var button = new gox_y_GButton({ foreground : foreground, text : lines[i], textSize : this.game.fontSize * 1.3 | 0});
-			textHolder.addChild(button);
-		}
-		screen.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.onClick();
-		}}));
-	}
-};
-var avis_scenes_Help = function(game,r1,r2) {
-	gox_Help.call(this,game,r1,r2);
-};
-avis_scenes_Help.__name__ = true;
-avis_scenes_Help.__super__ = gox_Help;
-avis_scenes_Help.prototype = $extend(gox_Help.prototype,{
-	getText: function() {
-		return ["Покушај да погодиш речи","које ти компјутер свира","кликом на неко слово","или преко тастатуре","и овером са ентер,","брисањем бекспејсом,","слушањем са контролом,","усмеравањем стрелицама,","прескакањем нумпадом [+-] и","враћањем на почетак ескејпом."];
-	}
-	,onClick: function() {
-		var g = this.game;
-		g.state = avis_GameState.INTRO;
-	}
-});
-var avis_scenes_Intro = function(game) {
-	var screen = new gox_y_GButton({ y : game.topMessengerSize, width : game.resolutionW, height : game.resolutionH, background : game.background});
-	screen.setLayoutManager(new gox_l_GCenterLayout());
-	var menu = new gox_y_GButton({ width : game.resolutionW >> 1, height : game.resolutionH >> 1});
-	menu.setLayoutManager(new gox_l_GEvenVecticalLayout());
-	screen.addChild(menu);
-	var modeA = new gox_y_GButton({ background : gox_Color.RED.duplicate().multiply(0.7777777), foreground : gox_Color.RED.duplicate().multiply(0.7777777).oposite(), text : "РАЗВАЛИ..!", textSize : game.fontSize});
-	menu.addChild(modeA);
-	var modeB = new gox_y_GButton({ background : gox_Color.BLUE.duplicate().multiply(0.7777777), foreground : gox_Color.BLUE.duplicate().multiply(0.7777777).oposite(), text : "КАКО СЕ ИГРА?", textSize : game.fontSize});
-	menu.addChild(modeB);
-	var modeC = new gox_y_GButton({ background : gox_Color.WHITE, foreground : gox_Color.WHITE.duplicate().oposite(), text : "ПОДЕСИ.. .", textSize : game.fontSize});
-	menu.addChild(modeC);
-	modeA.addMouseListener(new gox_y_GMouseAdapter({ onMouseReleased : function(e) {
-		game.state = avis_GameState.NEW_GAME;
-	}}));
-	modeB.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-		game.state = avis_GameState.HELP;
-	}}));
-	modeC.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-		game.state = avis_GameState.OPTIONS;
-	}}));
-};
-avis_scenes_Intro.__name__ = true;
-var avis_scenes_Keyboard = function(game) {
-	this.levelButton = null;
-	this.k = 0.87654321;
-	this.foreground = gox_Color.WHITE;
-	this.hoverForeground = gox_Color.WHITE;
-	this.hoverBackground = gox_Color.RED;
-	this.pressedForeground = gox_Color.BLACK;
-	this.pressedBackground = gox_Color.WHITE;
-	this.buttons = [];
-	var _gthis = this;
-	gox_y_GComponent.call(this);
-	avis_scenes_Keyboard.instance = this;
-	this.game = game;
-	this.addButtons();
-	this.addListeners();
-	this.levelButton = this.buttons[game.level - 1];
-	this.levelButton.p.pressed = true;
-	game.addEventListener(new gox_y_GEventAdapter({ onEvent : function(e) {
-		_gthis.levelButton.p.pressed = false;
-		var level = e.data;
-		_gthis.buttons[level - 1].p.pressed = true;
-		_gthis.levelButton = _gthis.buttons[level - 1];
-	}, listeningTo : function() {
-		return [gox_Events.LEVEL_CHANGED];
-	}}));
-};
-avis_scenes_Keyboard.__name__ = true;
-avis_scenes_Keyboard.__super__ = gox_y_GComponent;
-avis_scenes_Keyboard.prototype = $extend(gox_y_GComponent.prototype,{
-	addButtons: function() {
-		var size = 1.5;
-		var background = new gox_HSB(gox_Utilities.random(),0.5,0.333).toRGB();
-		var column1 = new gox_y_GButton({ x : 0, y : this.game.topMessengerSize, width : this.game.w30 * 2 * size | 0, height : this.game.resolutionH - 2 * this.game.fontSize - avis_scenes_Classroom.borderWidth, background : background});
-		column1.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		var column2 = new gox_y_GButton({ x : this.game.w30 * 2 * size | 0, y : this.game.topMessengerSize, width : this.game.w30 * 2 * size | 0, height : this.game.resolutionH - 2 * this.game.fontSize - avis_scenes_Classroom.borderWidth, background : background});
-		column2.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		var column3 = new gox_y_GButton({ x : this.game.resolutionW - this.game.w30 * 4 * size | 0, y : this.game.topMessengerSize, width : this.game.w30 * 2 * size | 0, height : this.game.resolutionH - 2 * this.game.fontSize - avis_scenes_Classroom.borderWidth, background : background});
-		column3.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		var column4 = new gox_y_GButton({ x : this.game.resolutionW - this.game.w30 * 2 * size | 0, y : this.game.topMessengerSize, width : this.game.w30 * 2 * size | 0, height : this.game.resolutionH - 2 * this.game.fontSize - avis_scenes_Classroom.borderWidth, background : background});
-		column4.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		var counter = 0;
-		var _g = 0;
-		while(_g < 30) {
-			var j = _g++;
-			var big = new gox_y_GButton({ foreground : this.foreground, hoverBackground : this.hoverBackground, hoverForeground : this.hoverForeground, pressedBackground : this.pressedBackground, pressedForeground : this.pressedForeground, text : avis_AudioVisionR.AZBUKA_BIG.charAt(j), textSize : this.game.w30 * this.k | 0});
-			big.data = counter++;
-			column1.addChild(big);
-			this.buttons.push(big);
-		}
-		var _g = 0;
-		while(_g < 30) {
-			var j = _g++;
-			var small = new gox_y_GButton({ foreground : this.foreground, hoverBackground : this.hoverBackground, hoverForeground : this.hoverForeground, pressedBackground : this.pressedBackground, pressedForeground : this.pressedForeground, text : avis_AudioVisionR.AZBUKA_SMALL.charAt(j), textSize : this.game.w30 * this.k | 0});
-			small.data = counter++;
-			column2.addChild(small);
-			this.buttons.push(small);
-		}
-		var _g = 0;
-		while(_g < 26) {
-			var j = _g++;
-			var big = new gox_y_GButton({ foreground : this.foreground, hoverBackground : this.hoverBackground, hoverForeground : this.hoverForeground, pressedBackground : this.pressedBackground, pressedForeground : this.pressedForeground, text : avis_AudioVisionR.ENGLISH_BIG.charAt(j), textSize : this.game.w26 * this.k | 0});
-			big.data = counter++;
-			column3.addChild(big);
-			this.buttons.push(big);
-		}
-		var _g = 0;
-		while(_g < 26) {
-			var j = _g++;
-			var small = new gox_y_GButton({ foreground : this.foreground, hoverBackground : this.hoverBackground, hoverForeground : this.hoverForeground, pressedBackground : this.pressedBackground, pressedForeground : this.pressedForeground, text : avis_AudioVisionR.ENGLISH_SMALL.charAt(j), textSize : this.game.w26 * this.k | 0});
-			small.data = counter++;
-			column4.addChild(small);
-			this.buttons.push(small);
-		}
-	}
-	,resetHighlighted: function(newOne) {
-		if(this.highlighted != null) {
-			this.highlighted.p.hovered = false;
-			this.highlighted = null;
-		}
-		if(newOne != null) {
-			newOne.p.hovered = true;
-			this.highlighted = newOne;
-		}
-	}
-	,addListeners: function() {
-		var _gthis = this;
-		var _g = 0;
-		var _g1 = this.buttons;
-		while(_g < _g1.length) {
-			var button = _g1[_g];
-			++_g;
-			button.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-				var b = e.component;
-				if(avis_scenes_Classroom.instance != null) {
-					avis_scenes_Classroom.instance.interactedChar = b.p.text;
-					avis_scenes_Classroom.instance.scrolledLetter = b.data;
-				}
-				_gthis.resetHighlighted(b);
-			}, onMouseReleased : function(e) {
-				if(avis_scenes_Classroom.instance != null) {
-					if(_gthis.game.input.length > 0 && _gthis.game.sameChars(_gthis.game.input.charAt(_gthis.game.input.length - 1),avis_scenes_Classroom.instance.interactedChar)) {
-						_gthis.game.state = avis_GameState.GUESS;
-						avis_scenes_Classroom.instance.interactedChar = "";
-					} else {
-						_gthis.game.input += avis_scenes_Classroom.instance.interactedChar;
-					}
-				}
-				_gthis.resetHighlighted();
-			}, onMouseDragged : function(e) {
-				gox_y_GComponent.onMouseMovedComponents(new gox_y_GMouseEvent(_gthis.game.engine._getMouseX(),_gthis.game.engine._getMouseY(),null));
-			}, onMouseEntered : function(e) {
-				var b = e.component;
-				if(avis_scenes_Classroom.instance != null) {
-					avis_scenes_Classroom.instance.interactedChar = b.p.text;
-					avis_scenes_Classroom.instance.scrolledLetter = b.data;
-				}
-				_gthis.resetHighlighted(b);
-			}, onMouseExited : function(e) {
-				var b = e.component;
-				if(avis_scenes_Classroom.instance != null) {
-					avis_scenes_Classroom.instance.interactedChar = "";
-				}
-				_gthis.resetHighlighted();
-			}}));
-		}
-	}
-});
-var avis_scenes_Options = function(game) {
-	gox_y_GComponent.call(this);
-	this.game = game;
-	this.setColors();
-	this.addScreen();
-	this.addBottom();
-	this.addMiddle();
-};
-avis_scenes_Options.__name__ = true;
-avis_scenes_Options.__super__ = gox_y_GComponent;
-avis_scenes_Options.prototype = $extend(gox_y_GComponent.prototype,{
-	setColors: function() {
-		this.bg = new gox_HSB(Math.random(),Math.random(),Math.random()).toRGB().multiply(0.333);
-		this.okBackground = this.bg.duplicate().mutate(0.5,0.6);
-		this.okForeground = this.okBackground.oposite();
-		this.cancelBackground = this.bg.duplicate().mutate(0.3,0.4);
-		this.cancelForeground = this.cancelBackground.oposite();
-		this.labelBackground = this.bg.duplicate().mutate(0.1,0.333);
-		this.labelForeground = this.labelBackground.oposite();
-		this.amountBackground = this.labelBackground.duplicate().mutate(0.1,0.333);
-		this.amountForeground = this.amountBackground.duplicate().mutate(0.1,0.333);
-	}
-	,addScreen: function() {
-		this.screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH, background : this.bg});
-	}
-	,addMiddle: function() {
-		this.screenCenter = new gox_y_GButton({ y : this.game.topMessengerSize - this.game.fontSize, width : this.game.resolutionW, height : this.game.resolutionH});
-		this.screenCenter.setLayoutManager(new gox_l_GCenterLayout());
-		var menu = new gox_y_GButton({ width : this.game.resolutionW >> 1, height : Math.round(8 * this.game.fontSize * 1.3)});
-		menu.setLayoutManager(new gox_l_GEvenVecticalLayout());
-		this.screenCenter.addChild(menu);
-		this.levelLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
-		menu.addChild(this.levelLabel);
-		this.levelAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 1, max : avis_AudioVisionR.DEFAULT.length, value : this.game.level});
-		menu.addChild(this.levelAmount);
-		this.maxPlayTimeLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
-		menu.addChild(this.maxPlayTimeLabel);
-		this.maxPlayTimeAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 1, max : 10, value : this.game.maxPlayTime});
-		menu.addChild(this.maxPlayTimeAmount);
-		this.maxWordLengthLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
-		menu.addChild(this.maxWordLengthLabel);
-		this.maxWordLengthAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 1, max : 16, value : this.game.maxWordLength});
-		menu.addChild(this.maxWordLengthAmount);
-		this.wordsPerLevelLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
-		menu.addChild(this.wordsPerLevelLabel);
-		this.wordsPerLevelAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 1, max : 30, value : this.game.wordsPerLevel});
-		menu.addChild(this.wordsPerLevelAmount);
-	}
-	,addBottom: function() {
-		var _gthis = this;
-		var bottomBar = new gox_y_GButton({ x : 0, y : this.game.resolutionH - this.game.fontSize * 2, width : this.game.resolutionW, height : this.game.fontSize * 2});
-		this.screen.addChild(bottomBar);
-		bottomBar.setLayoutManager(new gox_l_GEvenHorizontalLayout());
-		this.okButton = new gox_y_GButton({ background : this.okBackground, foreground : this.okForeground, text : "Okay", textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
-		bottomBar.addChild(this.okButton);
-		this.cancelButton = new gox_y_GButton({ background : this.cancelBackground, foreground : this.cancelForeground, text : "Cancel", textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
-		bottomBar.addChild(this.cancelButton);
-		this.okButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.game.level = _gthis.levelAmount.p.value;
-			_gthis.game.maxWordLength = _gthis.maxWordLengthAmount.p.value;
-			_gthis.game.wordsPerLevel = _gthis.wordsPerLevelAmount.p.value;
-			_gthis.game.maxPlayTime = _gthis.maxPlayTimeAmount.p.value;
-			_gthis.game.options = { level : _gthis.game.level, maxWordLength : _gthis.game.maxWordLength, wordsPerLevel : _gthis.game.wordsPerLevel, maxPlayTime : _gthis.game.maxPlayTime};
-			_gthis.game.state = avis_GameState.INTRO;
-		}}));
-		this.cancelButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
-			_gthis.game.state = avis_GameState.INTRO;
-		}}));
-	}
-	,updateComponent: function() {
-		this.levelLabel.p.text = "Level: " + avis_AudioVisionR.DEFAULT.charAt(this.levelAmount.p.value - 1);
-		this.maxPlayTimeLabel.p.text = "Sound time: " + this.maxPlayTimeAmount.p.value + " [sec]";
-		this.maxWordLengthLabel.p.text = "Longest word: " + this.maxWordLengthAmount.p.value + " [chr]";
-		this.wordsPerLevelLabel.p.text = "Words per level: " + this.wordsPerLevelAmount.p.value;
-	}
-});
-var firebase_FirebaseJS = function() { };
-firebase_FirebaseJS.__name__ = true;
-firebase_FirebaseJS.initializeApp = function(config) {
-	return firebaseApp.initializeApp(config);
-};
-firebase_FirebaseJS.getDatabase = function(app) {
-	return firebaseDatabase.getDatabase(app);
-};
-firebase_FirebaseJS.ref = function(db,path) {
-	return firebaseDatabase.ref(db, path);
-};
-firebase_FirebaseJS.push = function(ref) {
-	return firebaseDatabase.push(ref);
-};
-firebase_FirebaseJS.getKey = function(ref) {
-	return ref.key;
-};
-firebase_FirebaseJS.set = function(ref,data) {
-	return firebaseDatabase.set(ref, data);
-};
-firebase_FirebaseJS.get = function(ref) {
-	return firebaseDatabase.get(ref);
-};
-firebase_FirebaseJS.query = function(ref,constraints) {
-	return firebaseDatabase.query(ref, ...constraints);
-};
-firebase_FirebaseJS.orderByChild = function(path) {
-	return firebaseDatabase.orderByChild(path);
-};
-firebase_FirebaseJS.limitToFirst = function(count) {
-	return firebaseDatabase.limitToFirst(count);
-};
-firebase_FirebaseJS.update = function(ref,data) {
-	return firebaseDatabase.update(ref, data);
-};
-var gox_Color = function(r,g,b,a) {
-	this.r = r;
-	this.g = g;
-	this.b = b;
-	var tmp = a;
-	this.a = tmp != null ? tmp : 255;
-};
-gox_Color.__name__ = true;
-gox_Color.prototype = {
-	duplicate: function() {
-		return new gox_Color(this.r,this.g,this.b,this.a);
-	}
-	,set: function(c) {
-		this.r = c.r;
-		this.g = c.g;
-		this.b = c.b;
-		this.a = c.a;
-		return this;
-	}
-	,alpha: function(a) {
-		this.a = Math.round(Math.max(0,Math.min(a,255)));
-		return this;
-	}
-	,multiply: function(k) {
-		this.r = Math.round(this.r * k);
-		this.g = Math.round(this.g * k);
-		this.b = Math.round(this.b * k);
-		return this;
-	}
-	,clamp: function() {
-		this.r = Math.max(0,Math.min(this.r,255)) | 0;
-		this.g = Math.max(0,Math.min(this.g,255)) | 0;
-		this.b = Math.max(0,Math.min(this.b,255)) | 0;
-		return this;
-	}
-	,toHSB: function() {
-		this.clamp();
-		var rf = this.r / 255;
-		var gf = this.g / 255;
-		var bf = this.b / 255;
-		var max = Math.max(rf,Math.max(gf,bf));
-		var min = Math.min(rf,Math.min(gf,bf));
-		var delta = max - min;
-		var v = max;
-		var s = max == 0 ? 0 : delta / max;
-		var h = 0;
-		if(delta != 0) {
-			if(max == rf) {
-				h = (gf - bf) / delta + (gf < bf ? 6 : 0);
-			} else if(max == gf) {
-				h = (bf - rf) / delta + 2;
-			} else {
-				h = (rf - gf) / delta + 4;
-			}
-			h /= 6;
-		}
-		return new gox_HSB(h,s,v);
-	}
-	,mix: function(c,k) {
-		if(k == null) {
-			k = 0.5;
-		}
-		k = Math.max(0,Math.min(k,1));
-		this.r = Math.round(this.r + k * (c.r - this.r));
-		this.g = Math.round(this.g + k * (c.g - this.g));
-		this.b = Math.round(this.b + k * (c.b - this.b));
-		return this;
-	}
-	,toGray: function() {
-		var gray = 0.299 * this.r + 0.587 * this.g + 0.114 * this.b | 0;
-		this.r = gray;
-		this.g = gray;
-		this.b = gray;
-		return this;
-	}
-	,oposite: function(options) {
-		var hsb = this.toHSB();
-		var gray = this.duplicate().toGray();
-		hsb.h += 0.5;
-		var tmp = options != null ? options.s : null;
-		hsb.s *= tmp != null ? tmp : 0.5;
-		if(gray.r < 96) {
-			var tmp = options != null ? options.b : null;
-			hsb.b = tmp != null ? tmp : 1;
-		} else {
-			var tmp = options != null ? options.b : null;
-			hsb.b = 1 - (tmp != null ? tmp : 1);
-		}
-		return hsb.toRGB();
-	}
-	,invert: function() {
-		this.r = 255 - this.r;
-		this.g = 255 - this.g;
-		this.b = 255 - this.b;
-		return this;
-	}
-	,mutate: function(m,p) {
-		this.r = this.r + 255 * new gox_FloatRange(m,p).getRandom() | 0;
-		this.g = this.g + 255 * new gox_FloatRange(m,p).getRandom() | 0;
-		this.b = this.b + 255 * new gox_FloatRange(m,p).getRandom() | 0;
-		return this.clamp();
-	}
-};
-var gox_Events = function() { };
-gox_Events.__name__ = true;
-var gox_FloatRange = function(min,max) {
-	this.min = min;
-	this.max = max;
-};
-gox_FloatRange.__name__ = true;
-gox_FloatRange.prototype = {
-	getRandom: function() {
-		return this.min + gox_Utilities.random() * (this.max - this.min);
-	}
-};
-var gox_Recorded = function() { };
-gox_Recorded.__name__ = true;
-var gox_CoordinatesOffset = function(dx,dy) {
-	this.dx = dx;
-	this.dy = dy;
-};
-gox_CoordinatesOffset.__name__ = true;
-gox_CoordinatesOffset.__super__ = gox_Recorded;
-gox_CoordinatesOffset.prototype = $extend(gox_Recorded.prototype,{
-});
-var gox_MouseSwitch = function() {
-};
-gox_MouseSwitch.__name__ = true;
-gox_MouseSwitch.__super__ = gox_Recorded;
-gox_MouseSwitch.prototype = $extend(gox_Recorded.prototype,{
-});
-var gox_PlaybackMode = $hxEnums["gox.PlaybackMode"] = { __ename__:true,__constructs__:null
-	,RECORD: {_hx_name:"RECORD",_hx_index:0,__enum__:"gox.PlaybackMode",toString:$estr}
-	,PLAYBACK: {_hx_name:"PLAYBACK",_hx_index:1,__enum__:"gox.PlaybackMode",toString:$estr}
-	,IGNORE: {_hx_name:"IGNORE",_hx_index:2,__enum__:"gox.PlaybackMode",toString:$estr}
-	,STOPPED: {_hx_name:"STOPPED",_hx_index:3,__enum__:"gox.PlaybackMode",toString:$estr}
-};
-gox_PlaybackMode.__constructs__ = [gox_PlaybackMode.RECORD,gox_PlaybackMode.PLAYBACK,gox_PlaybackMode.IGNORE,gox_PlaybackMode.STOPPED];
 var gox_HSB = function(h,s,b) {
 	this.h = h;
 	this.s = s;
@@ -2510,6 +972,39 @@ gox_HSB.prototype = {
 			break;
 		}
 		return new gox_Color(Math.round(r * 255),Math.round(g * 255),Math.round(b * 255));
+	}
+};
+var gox_Help = function(game,r1,r2) {
+	this.game = game;
+	this.r1 = r1;
+	this.r2 = r2;
+	this.init();
+};
+gox_Help.__name__ = true;
+gox_Help.prototype = {
+	init: function() {
+		var _gthis = this;
+		var backgroundScreen = this.game.colors[this.r1].duplicate().mix(this.game.colors[this.r2]).multiply(0.666);
+		var backgroundMenu = backgroundScreen.duplicate().multiply(0.5);
+		var foreground = backgroundMenu.oposite();
+		var screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH, background : backgroundScreen});
+		screen.setLayoutManager(new gox_l_GCenterLayout());
+		var menuContent = new gox_y_GButton({ width : Math.round(this.game.resolutionW * 0.8), height : Math.round(this.game.resolutionH), background : backgroundMenu});
+		screen.addChild(menuContent);
+		var textHolder = new gox_y_GButton({ width : this.game.resolutionW * 0.8 | 0, height : this.getText().length * this.game.fontSize * 1.6 | 0});
+		textHolder.setLayoutManager(new gox_l_GEvenVecticalLayout());
+		screen.addChild(textHolder);
+		var lines = this.getText();
+		var _g = 0;
+		var _g1 = lines.length;
+		while(_g < _g1) {
+			var i = _g++;
+			var button = new gox_y_GButton({ foreground : foreground, text : lines[i], textSize : this.game.fontSize * 1.3 | 0});
+			textHolder.addChild(button);
+		}
+		screen.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.onClick();
+		}}));
 	}
 };
 var gox_IntRange = function(min,max) {
@@ -3890,6 +2385,682 @@ var gox_y_GMouseEvent = function(x,y,component,button) {
 	this.button = button;
 };
 gox_y_GMouseEvent.__name__ = true;
+var goxycam_GameState = $hxEnums["goxycam.GameState"] = { __ename__:true,__constructs__:null
+	,NOP: {_hx_name:"NOP",_hx_index:0,__enum__:"goxycam.GameState",toString:$estr}
+	,INTRO: {_hx_name:"INTRO",_hx_index:1,__enum__:"goxycam.GameState",toString:$estr}
+	,HELP: {_hx_name:"HELP",_hx_index:2,__enum__:"goxycam.GameState",toString:$estr}
+	,OPTIONS: {_hx_name:"OPTIONS",_hx_index:3,__enum__:"goxycam.GameState",toString:$estr}
+	,NEW_GAME: {_hx_name:"NEW_GAME",_hx_index:4,__enum__:"goxycam.GameState",toString:$estr}
+	,PLAYING: {_hx_name:"PLAYING",_hx_index:5,__enum__:"goxycam.GameState",toString:$estr}
+};
+goxycam_GameState.__constructs__ = [goxycam_GameState.NOP,goxycam_GameState.INTRO,goxycam_GameState.HELP,goxycam_GameState.OPTIONS,goxycam_GameState.NEW_GAME,goxycam_GameState.PLAYING];
+var goxycam_GoxyCam = function() {
+	this.questionFrames = 0;
+	this.question = 1.0;
+	this.base = 440 * Math.pow(2,-3.75);
+	this.octaves = 4;
+	this.resolutionIndex = 1;
+	this.resolutionsY = [240,300,384,480,540];
+	this.resolutionsX = [320,400,512,640,960];
+	this.bufferIndex = 8;
+	this.attack = 500;
+	this.multiply = 1000;
+	this.thresholdL = 1000;
+	this.thresholdS = 100;
+	this.thresholdH = 100;
+	this.toTune = false;
+	this.pixelsYRange = new gox_IntRange(0,1);
+	this.pixelsXRange = new gox_IntRange(0,1);
+	this.keyboardMouse = false;
+	this.state = goxycam_GameState.INTRO;
+	this.shade = 100;
+	this.crazyness = 18;
+	this.PLAYER = new gox_IntRange(7,9);
+	this.HEALTHY = new gox_IntRange(4,6);
+	this.SICK = new gox_IntRange(1,3);
+	this.BLACK = 0;
+	this.range = 3;
+	this.pushStates = [];
+	this.info = "";
+	gox_Game.call(this);
+	this.setTitle("GoxyC(@)m");
+	this.setResolution(400,300);
+	this.engine._initBuffers(1);
+	this.setQ();
+	this.createColors();
+	this.randomizeColors();
+	this.engine._loop($bind(this,this.logic));
+	this.engine._addMouseListener(this);
+	this.engine._addKeyboardListener(this);
+};
+goxycam_GoxyCam.__name__ = true;
+goxycam_GoxyCam.main = function() {
+	new goxycam_GoxyCam();
+};
+goxycam_GoxyCam.__super__ = gox_Game;
+goxycam_GoxyCam.prototype = $extend(gox_Game.prototype,{
+	setResolution: function(W,H) {
+		this.topMessengerSize = H / 540 * this.defaultTopMessengerSize | 0;
+		this.bottomMessengerSize = 0;
+		this.topMessageSpeed = W / 960;
+		this.fullResolutionW = W;
+		this.fullResolutionH = H;
+		this.resolutionW = W;
+		this.resolutionH = H - this.topMessengerSize - this.bottomMessengerSize;
+		this.engine._setResolution(W,H);
+	}
+	,setQ: function() {
+		this.fontSize = this.defaultFontSize * (this.fullResolutionH / 540) | 0;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.fullResolutionH;
+		while(_g1 < _g2) {
+			var y = _g1++;
+			var _g3 = [];
+			var _g4 = 0;
+			var _g5 = this.fullResolutionW;
+			while(_g4 < _g5) {
+				var x = _g4++;
+				_g3.push([0.0,0.0,0.0]);
+			}
+			_g.push(_g3);
+		}
+		this.HSBs = _g;
+		var _g = [];
+		var _g1 = 0;
+		var _g2 = this.fullResolutionH;
+		while(_g1 < _g2) {
+			var y = _g1++;
+			var _g3 = [];
+			var _g4 = 0;
+			var _g5 = this.fullResolutionW;
+			while(_g4 < _g5) {
+				var x = _g4++;
+				_g3.push([0.0,0.0,0.0]);
+			}
+			_g.push(_g3);
+		}
+		this.tunedHSBs = _g;
+	}
+	,createColors: function() {
+		this.colors = new Array(this.PLAYER.max + 1);
+		var _g = 0;
+		var _g1 = this.colors.length;
+		while(_g < _g1) {
+			var i = _g++;
+			this.colors[i] = new gox_Color(0,0,0);
+		}
+	}
+	,logic: function(dt) {
+		this.listenPushes();
+		switch(this.state._hx_index) {
+		case 0:
+			break;
+		case 1:
+			this.randomizeColors();
+			this.vStateChanged();
+			new goxycam_scenes_Intro(this);
+			this.state = goxycam_GameState.NOP;
+			break;
+		case 2:
+			this.vStateChanged();
+			new goxycam_scenes_Help(this,this.SICK.max,this.HEALTHY.max);
+			this.state = goxycam_GameState.NOP;
+			break;
+		case 3:
+			this.vStateChanged();
+			new goxycam_scenes_Options(this);
+			this.state = goxycam_GameState.NOP;
+			break;
+		case 4:
+			this.vStateChanged();
+			this.restart();
+			new goxycam_scenes_Operation(this);
+			this.state = goxycam_GameState.PLAYING;
+			break;
+		case 5:
+			this.engine.player._continue();
+			break;
+		}
+		gox_y_GComponent.updateComponents();
+		gox_y_GComponent.layoutComponents();
+		gox_y_GComponent.paintComponents(this.engine);
+	}
+	,listenPushes: function() {
+		if(this.pushStates.length == 0) {
+			return;
+		}
+		var toRemove = [];
+		var _g = 0;
+		var _g1 = this.pushStates;
+		while(_g < _g1.length) {
+			var s = _g1[_g];
+			++_g;
+			if(s.delay-- <= 0) {
+				this.state = s.state;
+				toRemove.push(s);
+				continue;
+			}
+		}
+		var _g = 0;
+		while(_g < toRemove.length) {
+			var t = toRemove[_g];
+			++_g;
+			HxOverrides.remove(this.pushStates,t);
+		}
+	}
+	,pushState: function(state,delay) {
+		this.pushStates.push({ state : state, delay : delay});
+	}
+	,vStateChanged: function() {
+		if(this.engine.player != null) {
+			this.engine.player._pause();
+		}
+		gox_y_GComponent.destroyComponents();
+		var tm = new gox_TopMessage(this,{ colors : this.colors, SICK : this.SICK.max, HEALTHY : this.HEALTHY.max});
+	}
+	,onKeyTyped: function(key) {
+	}
+	,onKeyPressed: function(code) {
+		if(this.engine.player == null) {
+			return;
+		}
+		if(code == gox_Game.VK_ESCAPE) {
+			this.state = goxycam_GameState.INTRO;
+		} else if(code == gox_Game.VK_F1) {
+			this.octaves--;
+			this.octaves = Math.max(this.octaves,1) | 0;
+		} else if(code == gox_Game.VK_F2) {
+			this.octaves++;
+		} else if(code == gox_Game.VK_R) {
+			this.playRandom();
+		} else if(code == gox_Game.VK_T) {
+			this.tune();
+		} else if(!this.keyboardMouse) {
+			this.keyboardMouse = true;
+			this.onMousePressed(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),this,0));
+			return;
+		}
+		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
+	}
+	,onKeyReleased: function(code) {
+		if(this.keyboardMouse) {
+			this.keyboardMouse = false;
+			this.onMouseReleased(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),this,0));
+		}
+	}
+	,onMousePressed: function(e) {
+		if(this.engine.player == null) {
+			this.engine._init(441000,256);
+		}
+		gox_y_GComponent.onMousePressedComponents(e);
+		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
+	}
+	,onMouseReleased: function(e) {
+		gox_y_GComponent.onMouseReleasedComponents(e);
+		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
+	}
+	,onMouseMoved: function(e) {
+		if(this.keyboardMouse) {
+			this.onMouseDragged(new gox_y_GMouseEvent(this.engine._getMouseX(),this.engine._getMouseY(),this,0));
+			return;
+		}
+		gox_y_GComponent.onMouseMovedComponents(e);
+		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
+	}
+	,onMouseDragged: function(e) {
+		gox_y_GComponent.onMouseDraggedComponents(e);
+		this.fireEvent(new gox_y_GEvent(gox_Events.PLAYER_INTERACTED));
+	}
+	,onMouseEntered: function(e) {
+	}
+	,onMouseExited: function(e) {
+	}
+	,tune: function() {
+		this.toTune = true;
+	}
+	,_tune: function() {
+		var _g = this.pixelsYRange.min;
+		var _g1 = this.pixelsYRange.max;
+		while(_g < _g1) {
+			var y = _g++;
+			var _g2 = this.pixelsXRange.min;
+			var _g3 = this.pixelsXRange.max;
+			while(_g2 < _g3) {
+				var x = _g2++;
+				this.tunedHSBs[y][x][0] = this.HSBs[y][x][0];
+				this.tunedHSBs[y][x][1] = this.HSBs[y][x][1];
+				this.tunedHSBs[y][x][2] = this.HSBs[y][x][2];
+			}
+		}
+		this.toTune = false;
+	}
+	,getVolume: function(frequency) {
+		return 0.666 / Math.pow(frequency / this.base,0.5);
+	}
+	,playRandom: function() {
+		this.questionFrames = this.engine._getFPS() | 0;
+		this.question = this.base * Math.pow(2,new gox_FloatRange(0.0833333333333333287,this.octaves - 0.0833333333333333287).getRandom());
+		this.engine.player.notes[1023].power = 10;
+		this.engine.player.notes[1023].frequency = this.question;
+		this.engine.player.notes[1023].playing = true;
+		this.engine.player.notes[1023].amplitude = this.getVolume(this.question);
+		this.engine.player.notes[1023].clip = 0.5;
+	}
+	,play: function() {
+		var _gthis = this;
+		var noteCounter = 0;
+		var width = this.pixelsXRange.max - this.pixelsXRange.min;
+		var height = this.pixelsYRange.max - this.pixelsYRange.min;
+		var x1 = this.pixelsXRange.min;
+		var y1 = this.pixelsYRange.min;
+		var doTheMagic = function(start,end,volume) {
+			if(end - start < 1) {
+				return;
+			}
+			if(end - start > _gthis.fontSize || end < _gthis.fontSize && start == 0 || start > width - _gthis.fontSize && end == width - 1) {
+				var index = end + start >> 1;
+				var k = index / width;
+				var n = (_gthis.octaves * 12 + 1) * k;
+				var frequency = _gthis.base * Math.pow(2,n / 12);
+				if(Math.min(frequency,_gthis.question) / Math.max(frequency,_gthis.question) > 0.96) {
+					_gthis.questionFrames--;
+					if(_gthis.questionFrames == 0) {
+						_gthis.playRandom();
+					}
+				} else {
+					var doTheMagic = _gthis.engine._getFPS() | 0;
+					_gthis.questionFrames = doTheMagic;
+				}
+				_gthis.engine._setColor(gox_Color.RED);
+				_gthis.engine._fillRect(x1 + start,y1,end - start,height);
+				_gthis.engine.player.notes[noteCounter].power = 10;
+				_gthis.engine.player.notes[noteCounter].frequency = frequency;
+				_gthis.engine.player.notes[noteCounter].playing = true;
+				_gthis.engine.player.notes[noteCounter].clip = 0.5;
+				var _gthis1 = _gthis.engine.player.notes[noteCounter].amplitude += _gthis.attack / 1000 * _gthis.getVolume(frequency);
+				var doTheMagic = _gthis.getVolume(frequency);
+				_gthis.engine.player.notes[noteCounter].amplitude = Math.min(_gthis1,doTheMagic);
+				noteCounter += 1;
+			}
+		};
+		var silentOthers = function() {
+			var _g = 0;
+			while(_g < 1000) {
+				var i = _g++;
+				_gthis.engine.player.notes[i].amplitude *= 0.9;
+				if(_gthis.engine.player.notes[i].amplitude < 0.01) {
+					_gthis.engine.player.notes[i].playing = false;
+				}
+			}
+		};
+		silentOthers();
+		var start = 0;
+		var end = 0;
+		var red = false;
+		var _g = 0;
+		var _g1 = width;
+		while(_g < _g1) {
+			var x = _g++;
+			var value = 0.0;
+			var _g2 = 0;
+			var _g3 = height;
+			while(_g2 < _g3) {
+				var y = _g2++;
+				var diff = 0.0;
+				var diffH = Math.abs(this.tunedHSBs[y1 + y][x1 + x][0] - this.HSBs[y1 + y][x1 + x][0]);
+				diffH = Math.min(diffH,1 - diffH);
+				var diffS = Math.abs(this.tunedHSBs[y1 + y][x1 + x][1] - this.HSBs[y1 + y][x1 + x][1]);
+				var diffL = Math.abs(this.tunedHSBs[y1 + y][x1 + x][2] - this.HSBs[y1 + y][x1 + x][2]);
+				diff = this.thresholdH * diffH + this.thresholdS * diffS + this.thresholdL * diffL;
+				value += diff;
+				this.engine._setColor(new gox_Color(diff | 0,diff | 0,diff | 0).multiply(this.multiply / 1000).clamp());
+				this.engine._fillRect(x1 + x,y1 + y,1,1);
+			}
+			var max = height * 255;
+			var v = this.multiply / 1000 * value / max;
+			if(v > 0.5) {
+				red = false;
+				if(red) {
+					start = x;
+					end = x;
+				}
+				red = true;
+				end = x;
+				if(x == width - 1) {
+					doTheMagic(start,end,v);
+				}
+			} else {
+				red = true;
+				if(red) {
+					doTheMagic(start,end,v);
+				}
+				red = false;
+				start = x;
+				end = x;
+			}
+		}
+	}
+	,restart: function() {
+		this.engine.player.notes = [];
+		var _g = 0;
+		while(_g < 1024) {
+			var i = _g++;
+			this.engine.player.notes.push(new gox_Note({ frequency : 0, clip : 0.5, power : 1, startFrame : 0, endFrame : 0, phase : 0, amplitude : 1, playing : false}));
+		}
+	}
+	,drawOutline: function() {
+		var width = this.pixelsXRange.max - this.pixelsXRange.min;
+		var height = this.pixelsYRange.max - this.pixelsYRange.min;
+		this.engine._setStroke(1);
+		this.engine._setColor(gox_Color.RED);
+		this.engine._drawRect(this.pixelsXRange.min,this.pixelsYRange.min,width,height);
+		var chunk = width / this.octaves;
+		var _g = 0;
+		var _g1 = this.octaves;
+		while(_g < _g1) {
+			var i = _g++;
+			var x = this.pixelsXRange.min + (i * chunk | 0);
+			this.engine._drawLine(x,this.pixelsYRange.min,x,this.pixelsYRange.max);
+		}
+	}
+	,drawWorld: function() {
+		this.engine._capture(false);
+		if(this.state == goxycam_GameState.PLAYING) {
+			this.engine._getHSBs(this.pixelsXRange.min,this.pixelsYRange.min,this.pixelsXRange.max,this.pixelsYRange.max,this.HSBs);
+			if(this.toTune) {
+				this._tune();
+			}
+			this.play();
+			this.drawOutline();
+		}
+	}
+	,randomizeFeel: function() {
+		this.randomizeColors();
+	}
+	,getR: function(r) {
+		return new gox_FloatRange(-r,r).getRandom();
+	}
+	,randomizeColors: function() {
+		var mix = function(a,b,k) {
+			return a + k * (b - a);
+		};
+		this.background = new gox_HSB(gox_Utilities.random(),1,0.05).toRGB();
+		this.colors[0] = this.background;
+		var hueK = this.crazyness / 100;
+		var shadeK = this.shade / 100;
+		var h = gox_Utilities.random();
+		var s = 1.0;
+		var b = 1.0;
+		var randB = b + gox_Utilities.random();
+		var counter = 1;
+		var _g = this.SICK.min;
+		var _g1 = this.SICK.max + 1;
+		while(_g < _g1) {
+			var i = _g++;
+			this.colors[i] = new gox_HSB(h + this.getR(hueK),s + this.getR(hueK),mix(1,(randB + this.getR(hueK)) * counter++ / this.range % 1,shadeK)).toRGB();
+		}
+		counter = 1;
+		var _g = this.HEALTHY.min;
+		var _g1 = this.HEALTHY.max + 1;
+		while(_g < _g1) {
+			var i = _g++;
+			this.colors[i] = new gox_HSB(h + 0.5 + this.getR(hueK),s + this.getR(hueK),mix(1,(randB + this.getR(hueK)) * counter++ / this.range % 1,shadeK)).toRGB();
+		}
+		counter = 1;
+		var _g = this.PLAYER.min;
+		var _g1 = this.PLAYER.max + 1;
+		while(_g < _g1) {
+			var i = _g++;
+			this.colors[i] = new gox_HSB(0,0,mix(1,counter++ / this.range,shadeK)).toRGB();
+		}
+		this.fireEvent(new gox_y_GEvent(gox_Events.RANDOMIZE_COLORS));
+	}
+});
+var goxycam_scenes_Help = function(game,r1,r2) {
+	gox_Help.call(this,game,r1,r2);
+};
+goxycam_scenes_Help.__name__ = true;
+goxycam_scenes_Help.__super__ = gox_Help;
+goxycam_scenes_Help.prototype = $extend(gox_Help.prototype,{
+	getText: function() {
+		return ["Отвараш светове, носе те руке,","нових заноса, постајеш део,","времена где се додирују,","сан и јава, бит и бајт,","гицојка и жабац,","чудотражећи ковач,","одмере смишља тачно,","апсолутни слух је жељица,","комшије маштају весео дочек,","новог тона, јер воле звук поштен."];
+	}
+	,onClick: function() {
+		var g = this.game;
+		g.state = goxycam_GameState.INTRO;
+	}
+});
+var goxycam_scenes_Intro = function(game) {
+	this.game = game;
+	var screen = new gox_y_GButton({ y : game.topMessengerSize, width : game.resolutionW, height : game.resolutionH, background : gox_Color.BLUE.duplicate().multiply(0.333)});
+	screen.setLayoutManager(new gox_l_GCenterLayout());
+	screen.addChild(new goxycam_scenes_WorldPainter(game));
+	var menu = new gox_y_GButton({ width : Math.round(0.5 * game.resolutionH * 1920 / 1080), height : Math.round(0.5 * game.resolutionH)});
+	menu.setLayoutManager(new gox_l_GEvenVecticalLayout());
+	screen.addChild(menu);
+	var modeA = new gox_y_GButton({ background : gox_Color.RED.duplicate().multiply(0.7777777), foreground : gox_Color.RED.duplicate().multiply(0.7777777).oposite(), text : "РАЗВАЛИ..!", textSize : game.fontSize});
+	menu.addChild(modeA);
+	var modeB = new gox_y_GButton({ background : gox_Color.BLUE.duplicate().multiply(0.7777777), foreground : gox_Color.BLUE.duplicate().multiply(0.7777777).oposite(), text : "КАКО СЕ ИГРА?", textSize : game.fontSize});
+	menu.addChild(modeB);
+	var modeC = new gox_y_GButton({ background : gox_Color.WHITE, foreground : gox_Color.WHITE.duplicate().oposite(), text : "ПОДЕСИ.. .", textSize : game.fontSize});
+	menu.addChild(modeC);
+	screen.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.engine._startCamera();
+	}}));
+	modeA.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.engine._startCamera();
+		game.state = goxycam_GameState.NEW_GAME;
+	}}));
+	modeB.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.state = goxycam_GameState.HELP;
+	}}));
+	modeC.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+		game.state = goxycam_GameState.OPTIONS;
+	}}));
+};
+goxycam_scenes_Intro.__name__ = true;
+var goxycam_scenes_WorldPainter = function(game) {
+	gox_y_GComponent.call(this);
+	this.game = game;
+};
+goxycam_scenes_WorldPainter.__name__ = true;
+goxycam_scenes_WorldPainter.__super__ = gox_y_GComponent;
+goxycam_scenes_WorldPainter.prototype = $extend(gox_y_GComponent.prototype,{
+	paintComponent: function(engine) {
+		this.game.engine._drawCamera(this.game.topMessengerSize);
+		this.game.drawWorld();
+	}
+});
+var goxycam_scenes_Operation = function(game) {
+	this.sliderWidthK = 0.09;
+	this.pressedPoint = new gox_Vector2D(0,0);
+	gox_y_GComponent.call(this);
+	this.game = game;
+	this.setColors();
+	this.addThings();
+};
+goxycam_scenes_Operation.__name__ = true;
+goxycam_scenes_Operation.__super__ = gox_y_GComponent;
+goxycam_scenes_Operation.prototype = $extend(gox_y_GComponent.prototype,{
+	setColors: function() {
+		var r = gox_Utilities.random();
+		this.bg = new gox_HSB(r,1,0.666).toRGB();
+		this.fg = new gox_HSB(r + new gox_FloatRange(-0.333,0.333).getRandom(),1,1).toRGB();
+	}
+	,addThings: function() {
+		var _gthis = this;
+		this.screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH, background : gox_Color.BLACK});
+		this.screen.addChild(new goxycam_scenes_WorldPainter(this.game));
+		var k = Math.round(this.game.fontSize * 0.222);
+		var topBar = new gox_y_GButton({ y : this.game.topMessengerSize + k, x : k, width : this.game.resolutionW - 2 * k, height : this.game.fontSize});
+		topBar.setLayoutManager(new gox_l_GEvenHorizontalLayout(k));
+		var hamburger = new gox_y_GButton({ foreground : this.bg.oposite(), background : this.bg, textSize : Math.round(this.game.topMessengerSize / 2), margin : Math.round(this.game.topMessengerSize / 4), text : "☰"});
+		hamburger.pack();
+		var thresholdH = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 0, max : 1000, value : this.game.thresholdH, text : "HUE"});
+		topBar.addChild(thresholdH);
+		var thresholdS = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 0, max : 1000, value : this.game.thresholdS, text : "SATURATION"});
+		topBar.addChild(thresholdS);
+		var thresholdL = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 0, max : 1000, value : this.game.thresholdL, text : "BRIGHTNESS"});
+		topBar.addChild(thresholdL);
+		var multiply = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 0, max : 1000, value : this.game.multiply, text : "MULTIPLY"});
+		topBar.addChild(multiply);
+		var attack = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 0, max : 1000, value : this.game.attack, text : "ATTACK"});
+		topBar.addChild(attack);
+		var octaves = new gox_y_GAmount({ foreground : this.fg, background : this.bg, width : this.game.resolutionW * this.sliderWidthK | 0, min : 1, max : 5, value : this.game.octaves, text : "OCTAVES"});
+		topBar.addChild(octaves);
+		var tune = new gox_y_GButton({ foreground : this.bg.oposite(), background : this.bg, textSize : this.game.fontSize >> 1, text : "TUNE"});
+		topBar.addChild(tune);
+		var random = new gox_y_GButton({ foreground : this.bg.oposite(), background : this.bg, textSize : this.game.fontSize >> 1, text : "RAND"});
+		topBar.addChild(random);
+		hamburger.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.state = goxycam_GameState.INTRO;
+		}}));
+		thresholdH.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.thresholdH = thresholdH.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.thresholdH = thresholdH.p.value;
+		}}));
+		thresholdS.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.thresholdS = thresholdS.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.thresholdS = thresholdS.p.value;
+		}}));
+		thresholdL.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.thresholdL = thresholdL.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.thresholdL = thresholdL.p.value;
+		}}));
+		multiply.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.multiply = multiply.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.multiply = multiply.p.value;
+		}}));
+		attack.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.attack = attack.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.attack = attack.p.value;
+		}}));
+		octaves.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.octaves = octaves.p.value;
+		}, onMouseDragged : function(e) {
+			_gthis.game.octaves = octaves.p.value;
+		}}));
+		tune.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.tune();
+		}}));
+		random.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.playRandom();
+		}}));
+		this.screen.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			e.y += _gthis.game.topMessengerSize;
+			_gthis.pressedPoint.set(e.x,e.y);
+		}, onMouseReleased : function(e) {
+			_gthis.game.tune();
+		}, onMouseDragged : function(e) {
+			e.y += _gthis.game.topMessengerSize;
+			if(e.x <= _gthis.pressedPoint.x) {
+				return;
+			}
+			if(e.y <= _gthis.pressedPoint.y) {
+				return;
+			}
+			if(e.x >= _gthis.game.fullResolutionW) {
+				return;
+			}
+			if(e.y >= _gthis.game.fullResolutionH) {
+				return;
+			}
+			_gthis.game.pixelsXRange.min = Math.round(_gthis.pressedPoint.x);
+			_gthis.game.pixelsXRange.max = e.x;
+			_gthis.game.pixelsYRange.min = Math.round(_gthis.pressedPoint.y);
+			_gthis.game.pixelsYRange.max = e.y;
+		}}));
+	}
+});
+var goxycam_scenes_Options = function(game) {
+	var _gthis = this;
+	gox_y_GComponent.call(this);
+	this.game = game;
+	this.setColors();
+	this.addScreen();
+	this.addBottom();
+	this.addMiddle();
+	this.update();
+	game.addEventListener(new gox_y_GEventAdapter({ onEvent : function(e) {
+		_gthis.update();
+	}, listeningTo : function() {
+		return [gox_Events.PLAYER_INTERACTED];
+	}}));
+};
+goxycam_scenes_Options.__name__ = true;
+goxycam_scenes_Options.__super__ = gox_y_GComponent;
+goxycam_scenes_Options.prototype = $extend(gox_y_GComponent.prototype,{
+	update: function() {
+		var buffer = Math.pow(2,this.bufferAmount.p.value);
+		this.bufferLabel.p.text = "Buffer: " + buffer + " bytes (" + Math.round(buffer / 44100 * 1000) + " ms)";
+		this.resolutionLabel.p.text = "Resolution: " + this.game.resolutionsX[this.resolutionAmount.p.value] + "x" + this.game.resolutionsY[this.resolutionAmount.p.value];
+		this.fpsLabel.p.text = "FPS: " + this.fpsAmount.p.value;
+	}
+	,setColors: function() {
+		this.okBackground = this.game.colors[this.game.SICK.max].duplicate().mix(this.game.colors[this.game.HEALTHY.max]).multiply(2).clamp();
+		this.okForeground = this.okBackground.duplicate().oposite();
+		this.cancelBackground = this.game.colors[this.game.SICK.max].duplicate().mix(this.game.colors[this.game.HEALTHY.max]).multiply(0.5).clamp();
+		this.cancelForeground = this.cancelBackground.duplicate().oposite();
+		this.bg = this.okBackground.duplicate().mix(this.cancelBackground);
+		var hsb = this.bg.toHSB();
+		this.labelBackground = new gox_HSB(hsb.h + 0.333,1,1).toRGB();
+		this.labelForeground = this.labelBackground.oposite();
+		this.amountBackground = new gox_HSB(hsb.h + 0.666,1,0.5).toRGB();
+		this.amountForeground = new gox_HSB(hsb.h + 0.666,1,1).toRGB();
+	}
+	,addScreen: function() {
+		this.screen = new gox_y_GButton({ y : this.game.topMessengerSize, width : this.game.resolutionW, height : this.game.resolutionH, background : this.bg});
+	}
+	,addMiddle: function() {
+		this.screenCenter = new gox_y_GButton({ y : this.game.topMessengerSize - this.game.fontSize, width : this.game.resolutionW, height : this.game.resolutionH});
+		this.screenCenter.setLayoutManager(new gox_l_GCenterLayout());
+		var menu = new gox_y_GButton({ width : this.game.fontSize * 18, height : Math.round(6 * this.game.fontSize * 1.3)});
+		menu.setLayoutManager(new gox_l_GEvenVecticalLayout());
+		this.screenCenter.addChild(menu);
+		this.bufferLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
+		menu.addChild(this.bufferLabel);
+		this.bufferAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 8, max : 14, value : this.game.bufferIndex});
+		menu.addChild(this.bufferAmount);
+		this.resolutionLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
+		menu.addChild(this.resolutionLabel);
+		this.resolutionAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 0, max : this.game.resolutionsX.length - 1, value : this.game.resolutionIndex});
+		menu.addChild(this.resolutionAmount);
+		this.fpsLabel = new gox_y_GButton({ background : this.labelBackground, foreground : this.labelForeground, textSize : this.game.fontSize});
+		menu.addChild(this.fpsLabel);
+		this.fpsAmount = new gox_y_GAmount({ background : this.amountBackground, foreground : this.amountForeground, min : 10, max : 60, value : this.game.engine._getFPS() | 0});
+		menu.addChild(this.fpsAmount);
+	}
+	,addBottom: function() {
+		var _gthis = this;
+		var bottomBar = new gox_y_GButton({ x : 0, y : this.game.resolutionH - this.game.fontSize * 2, width : this.game.resolutionW, height : this.game.fontSize * 2});
+		this.screen.addChild(bottomBar);
+		bottomBar.setLayoutManager(new gox_l_GEvenHorizontalLayout());
+		this.okButton = new gox_y_GButton({ background : this.okBackground, foreground : this.okForeground, text : "Okay", textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
+		bottomBar.addChild(this.okButton);
+		this.cancelButton = new gox_y_GButton({ background : this.cancelBackground, foreground : this.cancelForeground, text : "Cancel", textSize : this.game.fontSize, margin : this.game.fontSize >> 1});
+		bottomBar.addChild(this.cancelButton);
+		this.okButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.engine._setFPS(_gthis.fpsAmount.p.value);
+			_gthis.game.bufferIndex = _gthis.bufferAmount.p.value;
+			_gthis.game.engine.player.bufferSize = Math.round(Math.pow(2,_gthis.bufferAmount.p.value));
+			_gthis.game.engine.player.restart();
+			_gthis.game.resolutionIndex = _gthis.resolutionAmount.p.value;
+			_gthis.game.setResolution(_gthis.game.resolutionsX[_gthis.resolutionAmount.p.value],_gthis.game.resolutionsY[_gthis.resolutionAmount.p.value]);
+			_gthis.game.engine._initBuffers(1);
+			_gthis.game.setQ();
+			_gthis.game.state = goxycam_GameState.INTRO;
+		}}));
+		this.cancelButton.addMouseListener(new gox_y_GMouseAdapter({ onMousePressed : function(e) {
+			_gthis.game.state = goxycam_GameState.INTRO;
+		}}));
+	}
+});
 var haxe_iterators_ArrayIterator = function(array) {
 	this.current = 0;
 	this.array = array;
@@ -4550,7 +3721,7 @@ js_Boot.__string_rec = function(o,s) {
 var jsgox_JSEngine = function(options) {
 	this.usedCamera = false;
 	this.playingVideo = false;
-	this.mousePresses = 0;
+	this.mouseSwitches = 0;
 	this.ignore = false;
 	this.playing = false;
 	this.show = true;
@@ -4675,6 +3846,7 @@ jsgox_JSEngine.prototype = {
 		});
 	}
 	,_simulateMouseDown: function() {
+		this.mouseSwitches++;
 		this.mouseDown = true;
 		var _g = 0;
 		var _g1 = this.mouseListeners;
@@ -4685,6 +3857,7 @@ jsgox_JSEngine.prototype = {
 		}
 	}
 	,_simulateMouseUp: function() {
+		this.mouseSwitches++;
 		this.mouseDown = false;
 		var _g = 0;
 		var _g1 = this.mouseListeners;
@@ -4714,7 +3887,7 @@ jsgox_JSEngine.prototype = {
 	}
 	,onMouseDown: function(e) {
 		this.mouseDown = true;
-		this.mousePresses++;
+		this.mouseSwitches++;
 		this.setMouseCoordinates(e);
 		var _g = 0;
 		var _g1 = this.mouseListeners;
@@ -4726,6 +3899,7 @@ jsgox_JSEngine.prototype = {
 	}
 	,onMouseUp: function(e) {
 		this.mouseDown = false;
+		this.mouseSwitches++;
 		this.setMouseCoordinates(e);
 		var _g = 0;
 		var _g1 = this.mouseListeners;
@@ -5054,8 +4228,8 @@ jsgox_JSEngine.prototype = {
 	,_setMouseY: function(y) {
 		this.mouseY = y;
 	}
-	,_getMousePresses: function() {
-		return this.mousePresses;
+	,_getMouseSwitches: function() {
+		return this.mouseSwitches;
 	}
 	,_isMouseDown: function() {
 		return this.mouseDown;
@@ -5230,6 +4404,19 @@ String.__name__ = true;
 Array.__name__ = true;
 Date.__name__ = "Date";
 js_Boot.__toStr = ({ }).toString;
+firebase_FirebaseJS.config = { apiKey : "AIzaSyD73SPD6xWLreoEA6Wb4IWod5-PrI511Gw", authDomain : "goxysvitac.firebaseapp.com", databaseURL : "https://goxysvitac-default-rtdb.europe-west1.firebasedatabase.app", projectId : "goxysvitac", storageBucket : "goxysvitac.firebasestorage.app", messagingSenderId : "699971242546", appId : "1:699971242546:web:69316bd47653357bc38a2b", measurementId : "G-SXMWQ9SWCH"};
+gox_Color.BLACK = new gox_Color(0,0,0);
+gox_Color.WHITE = new gox_Color(255,255,255);
+gox_Color.RED = new gox_Color(255,0,0);
+gox_Color.GREEN = new gox_Color(0,255,0);
+gox_Color.BLUE = new gox_Color(0,0,255);
+gox_Color.YELLOW = new gox_Color(255,255,0);
+gox_Color.CYAN = new gox_Color(0,255,255);
+gox_Color.MAGENTA = new gox_Color(255,0,255);
+gox_Events.RANDOMIZE_COLORS = "RANDOMIZE_COLORS";
+gox_Events.LEVEL_CHANGED = "LEVEL_CHANGED";
+gox_Events.PLAYER_INTERACTED = "PLAYER_INTERACTED";
+gox_Events.GAME_SHOWN = "GAME_SHOWN";
 gox_y_GComponent.components = [];
 gox_Game.VK_ESCAPE = 27;
 gox_Game.VK_F1 = 112;
@@ -5297,36 +4484,15 @@ gox_Game.VK_SEMICOLON = 59;
 gox_Game.VK_COLON = 222;
 gox_Game.VK_BACKSLASH = 92;
 gox_Game.VK_SHIFT = 16;
-avis_AudioVisionR.AZBUKA_BIG = "АБВГДЂЕЖЗИЈКЛЉМНЊОПРСТЋУФХЦЧЏШ";
-avis_AudioVisionR.AZBUKA_SMALL = "абвгдђежзијклљмнњопрстћуфхцчџш";
-avis_AudioVisionR.ENGLISH_BIG = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-avis_AudioVisionR.ENGLISH_SMALL = "abcdefghijklmnopqrstuvwxyz";
-avis_AudioVisionR.DEFAULT = avis_AudioVisionR.AZBUKA_BIG + avis_AudioVisionR.AZBUKA_SMALL + avis_AudioVisionR.ENGLISH_BIG + avis_AudioVisionR.ENGLISH_SMALL;
-avis_AudioVisionR.alphabet = avis_AudioVisionR.DEFAULT.substring(0);
-avis_Song.death = [1.0,1000.0];
-avis_scenes_Classroom.borderWidth = 2;
-firebase_FirebaseJS.config = { apiKey : "AIzaSyD73SPD6xWLreoEA6Wb4IWod5-PrI511Gw", authDomain : "goxysvitac.firebaseapp.com", databaseURL : "https://goxysvitac-default-rtdb.europe-west1.firebasedatabase.app", projectId : "goxysvitac", storageBucket : "goxysvitac.firebasestorage.app", messagingSenderId : "699971242546", appId : "1:699971242546:web:69316bd47653357bc38a2b", measurementId : "G-SXMWQ9SWCH"};
-gox_Color.BLACK = new gox_Color(0,0,0);
-gox_Color.WHITE = new gox_Color(255,255,255);
-gox_Color.RED = new gox_Color(255,0,0);
-gox_Color.GREEN = new gox_Color(0,255,0);
-gox_Color.BLUE = new gox_Color(0,0,255);
-gox_Color.YELLOW = new gox_Color(255,255,0);
-gox_Color.CYAN = new gox_Color(0,255,255);
-gox_Color.MAGENTA = new gox_Color(255,0,255);
-gox_Events.RANDOMIZE_COLORS = "RANDOMIZE_COLORS";
-gox_Events.LEVEL_CHANGED = "LEVEL_CHANGED";
-gox_Events.PLAYER_INTERACTED = "PLAYER_INTERACTED";
-gox_Events.GAME_SHOWN = "GAME_SHOWN";
 gox_TopMessage.firstRun = true;
 gox_TopMessage.messages = [];
 gox_TopMessage.flipFlop = false;
 gox_TopMessage.messageIndex = 0;
 gox_TopMessage.startTime = HxOverrides.now() / 1000;
-gox_Utilities.version = "1.782915867816E9";
+gox_Utilities.version = "1.782923014686E9";
 gox_Utilities.seed = Std.random(123456789);
-gox_Utilities.factor = 1000000;
-avis_AudioVisionR.main();
+gox_Utilities.factor = 1000;
+goxycam_GoxyCam.main();
 })(typeof window != "undefined" ? window : typeof global != "undefined" ? global : typeof self != "undefined" ? self : this);
 
 			});
